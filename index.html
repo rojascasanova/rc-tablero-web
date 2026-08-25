@@ -18,7 +18,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-  window.RC_VERSION = '1.1.8';   // subir esto en cada versión nueva
+  window.RC_VERSION = '1.1.9';   // subir esto en cada versión nueva
   // Conexión a tu base de datos Supabase (tablero-rc)
   window.RC_SUPABASE_URL  = 'https://sdzybsyxyfbyrynhumig.supabase.co';
   window.RC_SUPABASE_ANON = 'sb_publishable_ycU09SDH1kMB5PqnfzkguQ_TIVFvmw-';
@@ -824,6 +824,15 @@ input,select,textarea{font-family:inherit}
 .cloud-dot{position:fixed;left:18px;bottom:14px;z-index:90;font-family:'IBM Plex Mono',monospace;font-size:10.5px;
   color:var(--faint);opacity:0;transform:translateY(4px);transition:opacity .2s,transform .2s;pointer-events:none}
 .cloud-dot.show{opacity:1;transform:translateY(0)}
+/* aviso fijo cuando el tablero NO está guardando en la nube: este no se
+   esconde solo, porque perder tareas sin enterarse es lo peor que puede pasar */
+.cloud-alerta{position:fixed;left:14px;bottom:12px;z-index:95;max-width:min(430px,92vw);
+  font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.45;
+  background:var(--panel);border:1px solid var(--p1);border-radius:10px;
+  padding:9px 12px;color:var(--paper);cursor:pointer;box-shadow:0 6px 24px rgba(0,0,0,.45)}
+.cloud-alerta b{color:var(--p1);font-weight:600}
+.cloud-alerta small{display:block;color:var(--dim);font-size:10px;margin-top:3px}
+@media(max-width:760px){ .cloud-alerta{left:8px;right:8px;bottom:8px;max-width:none} }
 .ask-modal{min-width:340px}
 .ask-in{width:100%;background:var(--panel);border:1px solid var(--line-strong);border-radius:9px;color:var(--paper);
   padding:12px 13px;font-size:14px;outline:none;font-family:'IBM Plex Sans',sans-serif;margin:4px 0 6px}
@@ -1116,10 +1125,23 @@ function normalizeData(){
   if(!data.mkt.marcas || !data.mkt.marcas.length) data.mkt.marcas=['EMEP','IEN','Molde','Propertwin','theARQmarket'];
 }
 let saveTimer=null;
+/* Marca "tengo cambios que todavía no confirmó la nube". Sobrevive a recargas,
+   que es justo cuando se perdían tareas: escribías, el guardado en la nube
+   fallaba en silencio, recargabas y la copia de la nube pisaba la local. */
+const PEND_KEY='rc_pendiente_v1';
+function marcarPendiente(){
+  try{ localStorage.setItem(PEND_KEY, String(Date.now())); }catch(e){}
+}
+function pendienteDesde(){
+  try{ const v=localStorage.getItem(PEND_KEY); return v?+v:0; }catch(e){ return 0; }
+}
+function limpiarPendiente(){ try{ localStorage.removeItem(PEND_KEY); }catch(e){} }
+
 function save(){
   clearTimeout(saveTimer);
   saveTimer=setTimeout(()=>{
     try{ localStorage.setItem(KEY, JSON.stringify(data)); }catch(e){}
+    marcarPendiente();
     cloudPush();                 // guarda en Supabase (si hay sesión)
   },250);
 }
@@ -3710,10 +3732,28 @@ function cloudInit(){
 async function cloudLoad(){
   if(!SB) return false;
   try{
-    const { data:row, error } = await SB.from('tablero_estado').select('data').eq('id',1).single();
-    if(error){ console.warn('cloudLoad', error.message); return false; }
+    const { data:row, error } = await SB.from('tablero_estado')
+      .select('data,actualizado_en').eq('id',1).single();
+    if(error){ console.warn('cloudLoad', error.message); cloudAviso('error'); return false; }
     const d = row && row.data;
     if(d && d.areas && d.areas.length){
+      // ¿este equipo tiene cambios que nunca confirmó la nube?
+      const pend = pendienteDesde();
+      const nube = row.actualizado_en ? Date.parse(row.actualizado_en) : 0;
+      if(pend && pend > nube){
+        // lo de aquí es más nuevo: NO lo pisamos, lo subimos.
+        console.info('cambios locales sin subir, más nuevos que la nube: los subo');
+        CLOUD_READY=true;
+        await cloudPushNow(true);
+        return false;
+      }
+      if(pend && pend <= nube){
+        // la nube va más adelante: guardo una copia de lo local antes de reemplazar
+        try{ localStorage.setItem('rc_respaldo_v1', localStorage.getItem(KEY)||''); }catch(e){}
+        cloudAviso('pisado');
+      } else {
+        limpiarPendiente();
+      }
       data = d;                    // usar lo de la nube
       // re-normalizar (misma lógica de load())
       normalizeData();
@@ -3723,14 +3763,25 @@ async function cloudLoad(){
     // la nube está vacía: subir lo que haya local como punto de partida
     await cloudPushNow(true);
     return false;
-  }catch(e){ console.warn('cloudLoad ex', e); return false; }
+  }catch(e){ console.warn('cloudLoad ex', e); cloudAviso('error'); return false; }
 }
 
 function cloudPush(){
-  if(!CLOUD_READY || !SB) return;
+  if(!CLOUD_READY || !SB){ if(!SB) cloudAviso('local'); return; }
   clearTimeout(cloudPushTimer);
   cloudPushTimer=setTimeout(()=>cloudPushNow(false), 400);
 }
+
+/* Reintento automático: si la nube falla, no se pierde nada. Se vuelve a
+   intentar cada vez más espaciado, hasta un minuto. */
+let reintentoT=null, reintentoN=0;
+function programarReintento(){
+  clearTimeout(reintentoT);
+  const espera=Math.min(60000, 4000*Math.pow(2, Math.min(reintentoN,4)));
+  reintentoN++;
+  reintentoT=setTimeout(()=>cloudPushNow(false), espera);
+}
+
 async function cloudPushNow(initial){
   if(!SB || !CLOUD_READY) return;
   if(CLOUD_PUSHING) { cloudPush(); return; }
@@ -3741,11 +3792,51 @@ async function cloudPushNow(initial){
     const payload = { data: data, actualizado_en: new Date().toISOString() };
     if(CLOUD_USER) payload.por_user = CLOUD_USER;
     const { error } = await SB.from('tablero_estado').update(payload).eq('id',1);
-    if(error) console.warn('cloudPush', error.message);
-    cloudDot(error? 'err':'ok');
-  }catch(e){ console.warn('cloudPushNow ex', e); cloudDot('err'); }
+    if(error){
+      console.warn('cloudPush', error.message);
+      cloudAviso('error', error.message); programarReintento();
+    } else {
+      limpiarPendiente(); reintentoN=0; clearTimeout(reintentoT);
+      cloudAviso(null); cloudDot('ok');
+    }
+  }catch(e){
+    console.warn('cloudPushNow ex', e);
+    cloudAviso('error', e && e.message); programarReintento();
+  }
   CLOUD_PUSHING=false;
 }
+
+/* Aviso FIJO en pantalla mientras el tablero no esté guardando en la nube.
+   El punto de antes duraba 1,8 s y era imposible darse cuenta. */
+let CLOUD_ALERTA=null;
+function cloudAviso(tipo, detalle){
+  const viejo=document.getElementById('cloudAlerta');
+  if(!tipo){ CLOUD_ALERTA=null; if(viejo) viejo.remove(); return; }
+  CLOUD_ALERTA=tipo;
+  const txt={
+    local  : ['Sin conexión con la nube',
+              'Lo que escribas queda solo en este equipo. Toca aquí para reintentar.'],
+    error  : ['No se está guardando en la nube',
+              'Tus cambios están a salvo en este equipo y se reintenta solo. Toca para reintentar ahora.'],
+    pisado : ['Se cargó la versión de la nube',
+              'Este equipo tenía cambios sin subir, más antiguos. Guardé una copia por si acaso.']
+  }[tipo] || ['Problema con la nube',''];
+  const nodo = viejo || el('div',{id:'cloudAlerta',class:'cloud-alerta',
+    onclick:()=>{ if(tipo==='pisado'){ cloudAviso(null); return; }
+                  reintentoN=0; CLOUD_READY=true; cloudPushNow(false); }});
+  nodo.innerHTML='';
+  nodo.append(el('b',{text:'⚠ '+txt[0]}), el('small',{text:txt[1]+(detalle?(' · '+detalle):'')}));
+  if(!viejo) document.body.append(nodo);
+}
+
+/* Al cerrar o esconder la pestaña, subir de inmediato lo que quede pendiente:
+   en el teléfono uno cambia de app y la página se congela a los pocos segundos. */
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='hidden' && pendienteDesde()){
+    clearTimeout(cloudPushTimer); cloudPushNow(false);
+  }
+});
+window.addEventListener('pagehide',()=>{ if(pendienteDesde()){ clearTimeout(cloudPushTimer); cloudPushNow(false); } });
 
 function cloudSubscribe(){
   if(!SB) return;
@@ -3814,6 +3905,7 @@ async function afterLogin(){
   CLOUD_READY=true;
   render();
   cloudSubscribe();
+  if(pendienteDesde()) cloudPushNow(false);   // quedó algo sin subir: súbelo ya
   cloudDot(got?'sync':'ok');
   // arrancar puentes/relojes
   ensureTimerWidget();
@@ -3823,8 +3915,9 @@ async function boot(){
   load();                 // carga cache local + normaliza (para tener algo mientras conecta)
   const sb = cloudInit();
   if(!sb){
-    // sin librería/config: modo local (respaldo)
-    render(); return;
+    // sin librería/config: modo local (respaldo). Antes esto pasaba en
+    // silencio y uno creía estar guardando en la nube sin estarlo.
+    render(); cloudAviso('local'); return;
   }
   const { data:sess } = await SB.auth.getSession();
   if(sess && sess.session){
