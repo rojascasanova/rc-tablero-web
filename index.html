@@ -18,7 +18,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-  window.RC_VERSION = '1.1.9';   // subir esto en cada versión nueva
+  window.RC_VERSION = '1.1.10';   // subir esto en cada versión nueva
   // Conexión a tu base de datos Supabase (tablero-rc)
   window.RC_SUPABASE_URL  = 'https://sdzybsyxyfbyrynhumig.supabase.co';
   window.RC_SUPABASE_ANON = 'sb_publishable_ycU09SDH1kMB5PqnfzkguQ_TIVFvmw-';
@@ -1137,10 +1137,16 @@ function pendienteDesde(){
 }
 function limpiarPendiente(){ try{ localStorage.removeItem(PEND_KEY); }catch(e){} }
 
+/* Cuando lo que acabamos de dibujar VINO de la nube, no hay que devolverlo:
+   si no, cada equipo le rebota el cambio al otro y quedan en un ida y vuelta
+   infinito escribiendo lo mismo. */
+let APLICANDO_NUBE=false;
 function save(){
+  const desdeNube = APLICANDO_NUBE;
   clearTimeout(saveTimer);
   saveTimer=setTimeout(()=>{
     try{ localStorage.setItem(KEY, JSON.stringify(data)); }catch(e){}
+    if(desdeNube) return;        // llegó de la nube: guardar aquí y punto
     marcarPendiente();
     cloudPush();                 // guarda en Supabase (si hay sesión)
   },250);
@@ -1196,6 +1202,16 @@ async function writeToFile(){
 function isEditing(){
   const ae=document.activeElement;
   return !!(ae && (ae.isContentEditable || ae.tagName==='TEXTAREA' || (ae.tagName==='INPUT'&&ae.type!=='button')));
+}
+/* isEditing() solo mira dónde está el cursor. Como las tarjetas son editables,
+   basta hacer clic en una para que quede "editando" indefinidamente, y antes
+   eso dejaba al tablero sin traer nunca más los cambios del otro equipo.
+   Lo que importa de verdad es si estás escribiendo AHORA. */
+let ULTIMA_TECLA=0;
+['keydown','input','paste','compositionstart'].forEach(ev=>
+  document.addEventListener(ev, ()=>{ ULTIMA_TECLA=Date.now(); }, true));
+function escribiendoAhora(){
+  return isEditing() && (Date.now()-ULTIMA_TECLA < 5000);
 }
 async function checkExternalChange(){
   if(!fileHandle||writing||isEditing()) return;
@@ -3743,6 +3759,7 @@ async function cloudLoad(){
       if(pend && pend > nube){
         // lo de aquí es más nuevo: NO lo pisamos, lo subimos.
         console.info('cambios locales sin subir, más nuevos que la nube: los subo');
+        ULTIMA_NUBE = row.actualizado_en || null;
         CLOUD_READY=true;
         await cloudPushNow(true);
         return false;
@@ -3758,6 +3775,7 @@ async function cloudLoad(){
       // re-normalizar (misma lógica de load())
       normalizeData();
       lastCloudRev = d._rev || null;
+      ULTIMA_NUBE = row.actualizado_en || null;
       return true;
     }
     // la nube está vacía: subir lo que haya local como punto de partida
@@ -3797,6 +3815,7 @@ async function cloudPushNow(initial){
       cloudAviso('error', error.message); programarReintento();
     } else {
       limpiarPendiente(); reintentoN=0; clearTimeout(reintentoT);
+      ULTIMA_NUBE = payload.actualizado_en;     // lo mío, no hace falta traerlo
       cloudAviso(null); cloudDot('ok');
     }
   }catch(e){
@@ -3849,12 +3868,78 @@ function cloudSubscribe(){
         if(d._rev && d._rev === lastCloudRev) return;
         if(d._rev && d._rev.split(':')[0] === CLIENT_ID) return;
         // no pisar mientras estoy editando algo
-        if(isEditing && isEditing()) return;
+        if(escribiendoAhora()) return;
         if(document.querySelector('.modal-ov')) return;
-        data = d; normalizeData(); render(); cloudDot('sync');
+        APLICANDO_NUBE=true;
+        try{ data = d; normalizeData(); render(); } finally { APLICANDO_NUBE=false; }
+        cloudDot('sync');
+        ULTIMA_NUBE = new Date().toISOString();
       }catch(e){ console.warn('realtime', e); }
     })
     .subscribe();
+  cloudVigilar();          // red de seguridad, por si el aviso en vivo no llega
+}
+
+/* ---- Vigilancia por si el aviso en vivo no funciona -------------------
+   El aviso instantáneo de Supabase ("Realtime") puede estar apagado en la
+   tabla, y entonces un equipo nunca se entera de lo que hizo el otro.
+   Así que además preguntamos cada pocos segundos si la nube cambió. Es una
+   consulta diminuta: solo la fecha de última modificación. */
+let ULTIMA_NUBE=null, vigilaT=null, VIGILANDO=false;
+
+let VIGILA_DESDE=0;
+async function cloudRevisar(){
+  if(!SB || !CLOUD_READY) return;
+  // si una consulta quedó colgada (señal que se cae a medio camino), no
+  // podemos quedarnos trabados para siempre: a los 20 s soltamos el candado
+  if(VIGILANDO && Date.now()-VIGILA_DESDE < 20000) return;
+  if(escribiendoAhora()) return;                     // no pisar lo que escribo
+  if(document.querySelector('.modal-ov')) return;    // ni con una ficha abierta
+  VIGILANDO=true; VIGILA_DESDE=Date.now();
+  try{
+    const { data:row, error } = await SB.from('tablero_estado')
+      .select('actualizado_en').eq('id',1).single();
+    if(!error && row && row.actualizado_en && row.actualizado_en !== ULTIMA_NUBE){
+      const { data:full, error:e2 } = await SB.from('tablero_estado')
+        .select('data,actualizado_en').eq('id',1).single();
+      if(!e2 && full && full.data && full.data.areas){
+        const d=full.data;
+        const mio = d._rev && d._rev.split(':')[0]===CLIENT_ID;
+        ULTIMA_NUBE = full.actualizado_en;
+        // Si aquí hay cambios sin subir MÁS NUEVOS que los de la nube, no los
+        // pisamos: los subimos. Sin esto, un guardado fallido más este
+        // vigilante borrarían la tarea recién escrita.
+        const pend=pendienteDesde();
+        const nubeTs=full.actualizado_en?Date.parse(full.actualizado_en):0;
+        if(pend && pend>nubeTs){ cloudPushNow(false); return; }
+        if(!mio && !escribiendoAhora() && !document.querySelector('.modal-ov')){
+          APLICANDO_NUBE=true;
+          try{ data=d; normalizeData(); render(); } finally { APLICANDO_NUBE=false; }
+          cloudDot('sync');
+        }
+      }
+    }
+  }catch(e){ /* sin conexión: se reintenta al próximo tic */ }
+  finally { VIGILANDO=false; }
+}
+
+let ULTIMO_CHEQUEO=0;
+function cloudRevisarSiToca(){
+  if(Date.now()-ULTIMO_CHEQUEO < 6000) return;
+  ULTIMO_CHEQUEO=Date.now();
+  cloudRevisar();
+}
+function cloudVigilar(){
+  clearInterval(vigilaT);
+  vigilaT=setInterval(cloudRevisarSiToca, 7000);
+  // Al volver a la ventana, revisar de inmediato.
+  document.addEventListener('visibilitychange',()=>{ if(!document.hidden){ ULTIMO_CHEQUEO=0; cloudRevisarSiToca(); } });
+  window.addEventListener('focus',()=>{ ULTIMO_CHEQUEO=0; cloudRevisarSiToca(); });
+  window.addEventListener('pageshow',()=>{ ULTIMO_CHEQUEO=0; cloudRevisarSiToca(); });
+  // Y ante cualquier señal de que estás usando el tablero. Es barato: la
+  // consulta pide solo una fecha, y como máximo una vez cada 6 segundos.
+  ['pointerdown','keydown','wheel','touchstart'].forEach(ev=>
+    document.addEventListener(ev, cloudRevisarSiToca, {passive:true}));
 }
 
 /* indicador chico de estado de guardado */
