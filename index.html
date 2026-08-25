@@ -18,10 +18,36 @@
 <meta http-equiv="Pragma" content="no-cache">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-  window.RC_VERSION = '1.1.4';   // subir esto en cada versión nueva
+  window.RC_VERSION = '1.1.5';   // subir esto en cada versión nueva
   // Conexión a tu base de datos Supabase (tablero-rc)
   window.RC_SUPABASE_URL  = 'https://sdzybsyxyfbyrynhumig.supabase.co';
   window.RC_SUPABASE_ANON = 'sb_publishable_ycU09SDH1kMB5PqnfzkguQ_TIVFvmw-';
+
+  // ---- Auto-refresco de la versión web (teléfono) ----------------------
+  // El teléfono guarda el index.html en su caché y puede quedarse pegado en
+  // una versión vieja. Aquí preguntamos por un archivo diminuto (version.json)
+  // que nunca se cachea; si allá hay una versión distinta a la que se está
+  // ejecutando, recargamos con una dirección nueva y el teléfono baja la
+  // versión fresca. En la app de escritorio esto no corre.
+  (function(){
+    try{
+      if(window.rcApp) return;                       // escritorio: no aplica
+      if(location.protocol === 'file:') return;
+      var yaIntente = new URLSearchParams(location.search).get('rcv');
+      fetch('version.json?t=' + Date.now(), { cache: 'no-store' })
+        .then(function(r){ return r.ok ? r.json() : null; })
+        .then(function(j){
+          if(!j || !j.v) return;
+          if(j.v === window.RC_VERSION) return;      // ya estamos al día
+          if(yaIntente === j.v){                     // ya recargamos y no cambió
+            window.RC_CACHE_PEGADA = j.v;
+            return;
+          }
+          location.replace(location.pathname + '?rcv=' + encodeURIComponent(j.v));
+        })
+        .catch(function(){});
+    }catch(e){}
+  })();
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -3809,7 +3835,19 @@ async function cloudLogout(){
     s.addEventListener('click',()=>{ if(window.rcApp&&window.rcApp.buscarActualizacion) window.rcApp.buscarActualizacion(); });
   } else {
     s.textContent='tablero · web · v'+(window.RC_VERSION||'?');
-    s.title='Versión web '+(window.RC_VERSION||'?')+' · si no calza con la del computador, borra la caché';
+    s.title='Versión web '+(window.RC_VERSION||'?');
+    // si el auto-refresco detectó que hay una más nueva y el teléfono
+    // insiste en darnos la vieja, lo decimos y ofrecemos reintentar
+    setTimeout(function(){
+      if(!window.RC_CACHE_PEGADA) return;
+      s.textContent='tablero · web · v'+(window.RC_VERSION||'?')+' · hay v'+window.RC_CACHE_PEGADA;
+      s.style.color='var(--today)';
+      s.style.cursor='pointer';
+      s.title='Tu teléfono sigue mostrando la versión guardada. Toca aquí para forzar la nueva.';
+      s.addEventListener('click',function(){
+        location.replace(location.pathname+'?rcv='+encodeURIComponent(window.RC_CACHE_PEGADA)+'&t='+Date.now());
+      });
+    },2500);
   }
 })();
 
