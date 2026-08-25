@@ -18,7 +18,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-  window.RC_VERSION = '1.1.2';   // subir esto en cada versión nueva
+  window.RC_VERSION = '1.1.3';   // subir esto en cada versión nueva
   // Conexión a tu base de datos Supabase (tablero-rc)
   window.RC_SUPABASE_URL  = 'https://sdzybsyxyfbyrynhumig.supabase.co';
   window.RC_SUPABASE_ANON = 'sb_publishable_ycU09SDH1kMB5PqnfzkguQ_TIVFvmw-';
@@ -821,7 +821,9 @@ input,select,textarea{font-family:inherit}
     padding-left:16px!important;padding-right:16px!important}
   .today-view,.pers-view,.fin-view{flex:none;overflow-y:visible;max-width:100%;padding:4px 0 40px}
   .board-scroll{flex:none;height:auto;overflow-y:visible;overflow-x:auto;
-    -webkit-overflow-scrolling:touch;padding:6px 0 20px}
+    -webkit-overflow-scrolling:touch;padding:6px 0 20px;
+    touch-action:pan-x pan-y;overscroll-behavior-x:contain}
+  .mkt-tbl{touch-action:pan-x pan-y}
   .board,.board.packed{height:auto}
   .nav-arrow{display:none}          /* las flechas estorban en pantalla chica */
 
@@ -1435,6 +1437,9 @@ function attachBoardNav(scroll, root){
   // arrastrar el fondo para desplazar (pan con mouse)
   let panning=false, sx=0, sl=0, moved=0;
   scroll.addEventListener('pointerdown', e=>{
+    // en pantallas táctiles dejamos que el teléfono haga su propio scroll:
+    // si capturamos el dedo, el deslizar lateral deja de funcionar
+    if(e.pointerType && e.pointerType!=='mouse') return;
     if(e.button!==0) return;
     if(e.target.closest('.card, .proj-meta, .col-grip, .col-head, .add-input-wrap, textarea, input, button, select, [contenteditable="true"]')) return;
     panning=true; moved=0; sx=e.clientX; sl=scroll.scrollLeft;
