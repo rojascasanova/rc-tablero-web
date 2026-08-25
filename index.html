@@ -18,7 +18,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-  window.RC_VERSION = '1.1.1';   // subir esto en cada versión nueva
+  window.RC_VERSION = '1.1.2';   // subir esto en cada versión nueva
   // Conexión a tu base de datos Supabase (tablero-rc)
   window.RC_SUPABASE_URL  = 'https://sdzybsyxyfbyrynhumig.supabase.co';
   window.RC_SUPABASE_ANON = 'sb_publishable_ycU09SDH1kMB5PqnfzkguQ_TIVFvmw-';
@@ -813,8 +813,19 @@ input,select,textarea{font-family:inherit}
 /* ================= TELÉFONO ================= */
 #navBtn{display:none}
 @media(max-width:760px){
-  #app{grid-template-columns:1fr}
-  /* la barra lateral pasa a ser un cajón que entra desde la izquierda */
+  /* En el teléfono la página entera hace scroll, en vez de paneles de altura fija */
+  html,body{height:auto;overflow-x:hidden;overflow-y:auto}
+  #app{grid-template-columns:1fr;grid-template-rows:auto;height:auto;min-height:100vh;overflow:visible}
+  #main{height:auto;overflow:visible;min-height:0}
+  #mainContent{flex:none;min-height:0;overflow:visible;max-width:100%;
+    padding-left:16px!important;padding-right:16px!important}
+  .today-view,.pers-view,.fin-view{flex:none;overflow-y:visible;max-width:100%;padding:4px 0 40px}
+  .board-scroll{flex:none;height:auto;overflow-y:visible;overflow-x:auto;
+    -webkit-overflow-scrolling:touch;padding:6px 0 20px}
+  .board,.board.packed{height:auto}
+  .nav-arrow{display:none}          /* las flechas estorban en pantalla chica */
+
+  /* barra lateral como cajón */
   #sidebar{position:fixed;top:0;left:0;bottom:0;width:255px;z-index:120;
     transform:translateX(-100%);transition:transform .22s ease;
     box-shadow:0 0 40px rgba(0,0,0,.5);overflow-y:auto}
@@ -831,35 +842,24 @@ input,select,textarea{font-family:inherit}
   .clock-wrap .date-big{font-size:20px}
   .topbar-actions{margin-left:0;flex-wrap:wrap}
 
-  #mainContent{padding-left:16px!important;padding-right:16px!important}
-  /* columnas del tablero: una por pantalla, se deslizan de lado */
-  .board.packed .lane,.board.packed .column,.column{width:86vw!important;min-width:86vw}
-  .pres-board{grid-template-columns:1fr}
+  /* una columna por pantalla, se deslizan de lado */
+  .board.packed .lane,.board.packed .column,.column{width:86vw!important;min-width:86vw;max-height:none}
+  .arch-strip{margin:8px 0 40px;padding:10px 12px}
+
+  .pres-board,.pers-sum,.fin-sum,.fin-cols,.mkt-kanban{grid-template-columns:1fr}
+  .pers-add{grid-template-columns:1fr 1fr}
+  .mkt-tbl{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .mkt-row{min-width:610px}
   .platabar .pchip{flex:1 1 30%;padding:5px 8px 6px}
   .platabar .pchip .pv{font-size:12.5px}
   .ofi-chip{flex:1 1 45%;min-width:0}
   .ofi-name{max-width:100%}
   .emit-frame{height:74vh}
-  /* el tablero necesita scroll vertical: si no, los archivados quedan tapados */
-  /* overflow-y:auto obliga al navegador a permitir tambien scroll lateral,
-     y la pagina entera se corria. Lo dejamos explicito. */
-  #main{overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
-  #mainContent{max-width:100%;overflow-x:hidden}
-  .today-view,.pers-view,.fin-view{max-width:100%}
-  .pers-sum,.fin-sum,.fin-cols{grid-template-columns:1fr}
-  .pers-add{grid-template-columns:1fr 1fr}
-  .board-scroll{overflow-y:visible;padding:6px 16px 20px}
-  .arch-strip{margin:8px 16px 90px;padding:10px 12px}
-  /* la tabla de marketing se desliza de lado en vez de cortarse */
-  .mkt-tbl{overflow-x:auto;-webkit-overflow-scrolling:touch}
-  .mkt-row{min-width:610px}
-  .mkt-kanban{grid-template-columns:1fr}
-  .fin-cols{grid-template-columns:1fr}
-  .tmr-widget{right:10px;bottom:10px;width:170px}
   .triage-row{flex-direction:column;align-items:stretch}
   .triage-acts{flex-wrap:wrap}
   .triage-acts .pa-in{flex:1 1 45%;max-width:none}
   .modal{width:94vw;max-width:94vw}
+  .tmr-widget{right:10px;bottom:10px;width:170px}
 }
 </style>
 </head>
