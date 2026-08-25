@@ -14,8 +14,11 @@
 <meta name="apple-mobile-web-app-title" content="Tablero RC">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1b1815">
+<meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+  window.RC_VERSION = '1.1.1';   // subir esto en cada versión nueva
   // Conexión a tu base de datos Supabase (tablero-rc)
   window.RC_SUPABASE_URL  = 'https://sdzybsyxyfbyrynhumig.supabase.co';
   window.RC_SUPABASE_ANON = 'sb_publishable_ycU09SDH1kMB5PqnfzkguQ_TIVFvmw-';
@@ -838,7 +841,13 @@ input,select,textarea{font-family:inherit}
   .ofi-name{max-width:100%}
   .emit-frame{height:74vh}
   /* el tablero necesita scroll vertical: si no, los archivados quedan tapados */
-  #main{overflow-y:auto;-webkit-overflow-scrolling:touch}
+  /* overflow-y:auto obliga al navegador a permitir tambien scroll lateral,
+     y la pagina entera se corria. Lo dejamos explicito. */
+  #main{overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
+  #mainContent{max-width:100%;overflow-x:hidden}
+  .today-view,.pers-view,.fin-view{max-width:100%}
+  .pers-sum,.fin-sum,.fin-cols{grid-template-columns:1fr}
+  .pers-add{grid-template-columns:1fr 1fr}
   .board-scroll{overflow-y:visible;padding:6px 16px 20px}
   .arch-strip{margin:8px 16px 90px;padding:10px 12px}
   /* la tabla de marketing se desliza de lado en vez de cortarse */
@@ -3790,8 +3799,8 @@ async function cloudLogout(){
     s.style.cursor='pointer';
     s.addEventListener('click',()=>{ if(window.rcApp&&window.rcApp.buscarActualizacion) window.rcApp.buscarActualizacion(); });
   } else {
-    s.textContent='tablero · web';
-    s.title='Versión web · siempre actualizada';
+    s.textContent='tablero · web · v'+(window.RC_VERSION||'?');
+    s.title='Versión web '+(window.RC_VERSION||'?')+' · si no calza con la del computador, borra la caché';
   }
 })();
 
