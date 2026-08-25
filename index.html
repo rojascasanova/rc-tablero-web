@@ -837,6 +837,16 @@ input,select,textarea{font-family:inherit}
   .ofi-chip{flex:1 1 45%;min-width:0}
   .ofi-name{max-width:100%}
   .emit-frame{height:74vh}
+  /* el tablero necesita scroll vertical: si no, los archivados quedan tapados */
+  #main{overflow-y:auto;-webkit-overflow-scrolling:touch}
+  .board-scroll{overflow-y:visible;padding:6px 16px 20px}
+  .arch-strip{margin:8px 16px 90px;padding:10px 12px}
+  /* la tabla de marketing se desliza de lado en vez de cortarse */
+  .mkt-tbl{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .mkt-row{min-width:610px}
+  .mkt-kanban{grid-template-columns:1fr}
+  .fin-cols{grid-template-columns:1fr}
+  .tmr-widget{right:10px;bottom:10px;width:170px}
   .triage-row{flex-direction:column;align-items:stretch}
   .triage-acts{flex-wrap:wrap}
   .triage-acts .pa-in{flex:1 1 45%;max-width:none}
@@ -2160,6 +2170,25 @@ function renderPersonal(root){
       el('div',{class:'fin-mc out'},el('div',{class:'k',text:'Gastado en el mes'}),el('div',{class:'v',text:clp(totG)})),
       el('div',{class:'fin-mc inc'},el('div',{class:'k',text:'Ingresos en el mes'}),el('div',{class:'v',text:clp(totI)})),
       el('div',{class:'fin-mc'},el('div',{class:'k',text:'Neto'}),el('div',{class:'v '+(totI-totG>=0?'pos':'neg'),text:clp(totI-totG)}))));
+
+    // ---- utilidad del estudio en el mismo mes, para ver el cuadro completo ----
+    (function(){
+      const {ingresos,gastos:gproy}=finGather();
+      const enMes=x=>{ const d=ym(x.fecha); return d && d.y===PERS_Y && d.m===PERS_M; };
+      const eIn=ingresos.filter(enMes).reduce((s,x)=>s+x.monto,0);
+      const eOut=gproy.filter(enMes).reduce((s,x)=>s+x.monto,0);
+      if(!eIn && !eOut) return;
+      const util=eIn-eOut, bolsillo=util-totG+totI;
+      body.append(el('div',{class:'fin-det-h'},el('span',{class:'dm',text:'Tu estudio este mes'})));
+      body.append(el('div',{class:'pers-sum'},
+        el('div',{class:'fin-mc inc'},el('div',{class:'k',text:'Recibido (proyectos)'}),el('div',{class:'v',text:clp(eIn)})),
+        el('div',{class:'fin-mc out'},el('div',{class:'k',text:'Pagado al equipo'}),el('div',{class:'v',text:clp(eOut)})),
+        el('div',{class:'fin-mc'},el('div',{class:'k',text:'Utilidad del estudio'}),
+          el('div',{class:'v '+(util>=0?'pos':'neg'),text:clp(util)}))));
+      body.append(el('div',{class:'pers-empty',style:'padding:2px 2px 18px',
+        text:'Utilidad del estudio menos tus gastos personales: '+clp(bolsillo)+
+             (bolsillo>=0?' te quedó en el bolsillo.':' saliste en rojo este mes.')}));
+    })();
 
     // desglose por categoría (gastos)
     body.append(el('div',{class:'fin-det-h'},el('span',{class:'dm',text:'En qué se fue la plata'})));
