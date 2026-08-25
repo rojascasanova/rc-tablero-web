@@ -18,7 +18,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-  window.RC_VERSION = '1.1.6';   // subir esto en cada versión nueva
+  window.RC_VERSION = '1.1.8';   // subir esto en cada versión nueva
   // Conexión a tu base de datos Supabase (tablero-rc)
   window.RC_SUPABASE_URL  = 'https://sdzybsyxyfbyrynhumig.supabase.co';
   window.RC_SUPABASE_ANON = 'sb_publishable_ycU09SDH1kMB5PqnfzkguQ_TIVFvmw-';
@@ -883,6 +883,22 @@ input,select,textarea{font-family:inherit}
   .arch-strip{margin:8px 0 40px;padding:10px 12px}
 
   .pres-board,.pers-sum,.fin-sum,.fin-cols,.mkt-kanban{grid-template-columns:1fr}
+
+  /* ---- Gráfico del año en pantalla chica ----
+     minmax(0,1fr): sin esto cada mes exige su ancho mínimo, las 12 columnas
+     suman más que la pantalla y diciembre queda fuera del borde.
+     Los montos van en vertical sobre la barra para que no se encimen. */
+  .fin-chart{padding:16px 10px 12px}
+  .fin-ch-h{flex-direction:column;align-items:flex-start;gap:8px;margin-bottom:12px}
+  .fin-months{grid-template-columns:repeat(12,minmax(0,1fr));gap:2px;height:320px}
+  .fin-mcol{padding:104px 0 0;border-radius:5px}
+  .fin-bars{gap:2px}
+  .fin-bars i{width:7px;border-radius:2px 2px 0 0}
+  .fin-mlab{font-size:9px;margin-top:6px}
+  .fin-mval{top:4px;left:50%;right:auto;height:98px;width:12px;margin-left:-6px;
+    writing-mode:vertical-rl;transform:rotate(180deg);
+    display:flex;align-items:flex-start;justify-content:center;
+    font-size:8.5px;letter-spacing:-.2px;text-align:left}
   .pers-add{grid-template-columns:1fr 1fr}
   .mkt-tbl{overflow-x:auto;-webkit-overflow-scrolling:touch}
   .mkt-row{min-width:610px}
@@ -3917,13 +3933,29 @@ document.addEventListener('keydown', e=>{
 
 // re-empaquetar al cambiar tamaño de ventana (modo empaquetado)
 let _rzT=null;
+let _rzW = window.innerWidth;
+function _escribiendo(){
+  const a=document.activeElement;
+  return !!(a && (a.isContentEditable || a.tagName==='TEXTAREA' ||
+                  a.tagName==='INPUT' || a.tagName==='SELECT'));
+}
 window.addEventListener('resize', ()=>{
+  // En el teléfono, abrir el teclado dispara 'resize' aunque solo cambie el alto.
+  // Si volvemos a dibujar el tablero, el campo de la tarea se destruye y se
+  // pierde lo escrito. Solo re-empaquetamos si cambió el ANCHO, y nunca
+  // mientras se está escribiendo.
+  if(window.innerWidth === _rzW) return;
+  _rzW = window.innerWidth;
   clearTimeout(_rzT);
-  _rzT=setTimeout(()=>{ if(data.ui.view==='board' && (data.ui.layout||'packed')==='packed') render(); }, 250);
+  _rzT=setTimeout(()=>{
+    if(_escribiendo()) return;
+    if(data.ui.view==='board' && (data.ui.layout||'packed')==='packed') render();
+  }, 250);
 });
 // re-empaquetar cuando terminan de cargar las fuentes (alturas exactas)
 if(document.fonts && document.fonts.ready){
-  document.fonts.ready.then(()=>{ if(data.ui.view==='board' && (data.ui.layout||'packed')==='packed') render(); });
+  document.fonts.ready.then(()=>{ if(_escribiendo()) return;
+    if(data.ui.view==='board' && (data.ui.layout||'packed')==='packed') render(); });
 }
 
 // re-sync between tabs / windows
