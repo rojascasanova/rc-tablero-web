@@ -18,7 +18,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-  window.RC_VERSION = '1.1.5';   // subir esto en cada versión nueva
+  window.RC_VERSION = '1.1.6';   // subir esto en cada versión nueva
   // Conexión a tu base de datos Supabase (tablero-rc)
   window.RC_SUPABASE_URL  = 'https://sdzybsyxyfbyrynhumig.supabase.co';
   window.RC_SUPABASE_ANON = 'sb_publishable_ycU09SDH1kMB5PqnfzkguQ_TIVFvmw-';
@@ -841,15 +841,21 @@ input,select,textarea{font-family:inherit}
 @media(max-width:760px){
   /* En el teléfono la página entera hace scroll, en vez de paneles de altura fija */
   html,body{height:auto;overflow-x:hidden;overflow-y:auto}
-  #app{grid-template-columns:1fr;grid-template-rows:auto;height:auto;min-height:100vh;overflow:visible}
-  #main{height:auto;overflow:visible;min-height:0}
-  #mainContent{flex:none;min-height:0;overflow:visible;max-width:100%;
+  /* min-width:0 / minmax(0,1fr) en toda la cadena: sin esto, la rejilla y los
+     flex se ensanchan hasta el ancho del tablero completo (unos 2000px) y
+     entonces .board-scroll nunca tiene sobrante que desplazar: el tablero se
+     sale de la pantalla y el dedo no encuentra nada que mover. */
+  #app{grid-template-columns:minmax(0,1fr);grid-template-rows:auto;height:auto;min-height:100vh;overflow:visible}
+  #main{height:auto;overflow:visible;min-height:0;min-width:0;max-width:100vw}
+  #mainContent{flex:none!important;min-height:0;overflow:visible!important;
+    min-width:0;max-width:100vw;
     padding-left:16px!important;padding-right:16px!important}
-  .today-view,.pers-view,.fin-view{flex:none;overflow-y:visible;max-width:100%;padding:4px 0 40px}
+  .today-view,.pers-view,.fin-view{flex:none;overflow-y:visible;min-width:0;max-width:100%;padding:4px 0 40px}
   .board-scroll{flex:none;height:auto;overflow-y:visible;overflow-x:auto;
     -webkit-overflow-scrolling:touch;padding:6px 0 20px;
+    min-width:0;max-width:100%;
     touch-action:pan-x pan-y;overscroll-behavior-x:contain}
-  .mkt-tbl{touch-action:pan-x pan-y}
+  .mkt-tbl{touch-action:pan-x pan-y;min-width:0;max-width:100%;overflow-x:auto}
   .board,.board.packed,.lane,.column,.cards,.card{touch-action:pan-x pan-y}
   .card{-webkit-user-drag:none;user-select:none}
   .board,.board.packed{height:auto}
