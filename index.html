@@ -18,7 +18,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-  window.RC_VERSION = '1.1.11';   // subir esto en cada versión nueva
+  window.RC_VERSION = '1.3.1';   // subir esto en cada versión nueva
   // Conexión a tu base de datos Supabase (tablero-rc)
   window.RC_SUPABASE_URL  = 'https://sdzybsyxyfbyrynhumig.supabase.co';
   window.RC_SUPABASE_ANON = 'sb_publishable_ycU09SDH1kMB5PqnfzkguQ_TIVFvmw-';
@@ -1401,6 +1401,9 @@ function renderSidebar(){
   document.querySelectorAll('.nav-item[data-view]').forEach(b=>{
     b.classList.toggle('active', data.ui.view===b.dataset.view);
   });
+  // La sección Personal solo existe para su dueño
+  const btnPers=document.querySelector('.nav-item[data-view="personal"]');
+  if(btnPers) btnPers.style.display = soyDueno() ? '' : 'none';
   const pending = t=>!t.done;
   document.getElementById('hoyCount').textContent = allTasks().filter(x=>x.t.due&&!x.t.done&&x.t.due<=todayStr()).length || '';
   document.getElementById('inboxCount').textContent = data.inbox.filter(pending).length || '';
@@ -1489,6 +1492,7 @@ function renderPlataBar(){
 }
 
 function renderMain(){
+  if(data.ui.view==='personal' && !soyDueno()) data.ui.view='hoy';
   const root=document.getElementById('mainContent'); root.innerHTML='';
   if(data.ui.view==='hoy') return renderToday(root);
   if(data.ui.view==='inbox') return renderInbox(root);
@@ -3515,7 +3519,10 @@ function duplicarPresupuesto(p){
 
 
 /* ============ ACCIONES ============ */
-function setView(v){ if(v==='emitir'){ PENDING_PRESUP=null; EDITING_ID=null; } data.ui.view=v; render(); }
+function setView(v){ if(v==='emitir'){ PENDING_PRESUP=null; EDITING_ID=null; }
+  // si no es su tablero, la vista Personal no se abre ni escribiendo la ruta
+  if(v==='personal' && !soyDueno()) v='hoy';
+  data.ui.view=v; render(); }
 
 /* ===== TEMPORIZADOR POR PROYECTO ===== */
 let TIMER_INT=null;
@@ -3830,6 +3837,12 @@ function tick(){
 
 /* ============ NUBE (Supabase) ============ */
 let SB=null, CLOUD_READY=false, CLOUD_USER=null, CLOUD_PUSHING=false;
+/* Correo del dueño del tablero. Solo esa cuenta ve el botón "Personal".
+   Ojo: esto es lo que se ve; lo que PROTEGE de verdad es que la sección
+   personal vive en otra tabla con candado por usuario en Supabase. */
+const DUENO_MAIL = 'eduardorojascasanova@gmail.com';
+let CLOUD_MAIL = null;
+function soyDueno(){ return !CLOUD_MAIL || CLOUD_MAIL.toLowerCase() === DUENO_MAIL; }
 const CLIENT_ID = Math.random().toString(36).slice(2,10);   // para ignorar mis propios cambios
 let cloudPushTimer=null, lastCloudRev=null;
 
@@ -3868,11 +3881,19 @@ async function cloudLoad(){
       } else {
         limpiarPendiente();
       }
-      data = d;                    // usar lo de la nube
+      // Si no soy el dueño, lo personal ajeno se descarta al entrar:
+      // no se guarda ni se muestra en este equipo.
+      if(!soyDueno() && d.personal) delete d.personal;
+      const miPersonal = data.personal;          // lo mío no se pisa
+      const miUi = data.ui;
+      data = d;
+      if(soyDueno() && miPersonal && !d.personal) data.personal = miPersonal;
+      if(miUi) data.ui = unirUi(miUi, d.ui);      // cada equipo mantiene su vista
       // re-normalizar (misma lógica de load())
       normalizeData();
       lastCloudRev = d._rev || null;
       ULTIMA_NUBE = row.actualizado_en || null;
+      guardarBase(d);
       return true;
     }
     // la nube está vacía: subir lo que haya local como punto de partida
@@ -3897,6 +3918,190 @@ function programarReintento(){
   reintentoT=setTimeout(()=>cloudPushNow(false), espera);
 }
 
+/* ====================================================================
+   FUSIÓN DE CAMBIOS ENTRE EQUIPOS
+   El tablero se guarda como un bloque único. Antes ganaba el último que
+   escribía, así que un equipo con una copia vieja borraba el trabajo del
+   otro sin avisar. Ahora, cuando dos equipos tocaron el tablero, se
+   comparan TRES versiones: la que ambos tenían al empezar (BASE), la mía
+   y la de la nube. Lo que cada uno agregó se conserva; nada se pisa.
+   ==================================================================== */
+let BASE = null;                       // la copia de la nube tal como llegó
+
+function soloCompartido(d){
+  // Mientras no exista la tabla privada, lo personal viaja donde siempre.
+  // Si lo sacáramos igual, no quedaría guardado en ninguna parte.
+  if(PERSONAL_APARTE !== true) return d||{};
+  const o={}; for(const k in d){ if(k!=='personal') o[k]=d[k]; } return o;
+}
+function copia(x){ try{ return JSON.parse(JSON.stringify(x)); }catch(e){ return null; } }
+function guardarBase(d){ BASE = copia(soloCompartido(d||data)); }
+function igual(a,b){ return JSON.stringify(a)===JSON.stringify(b); }
+
+/* Une dos listas de objetos con id, sabiendo de dónde partieron.
+   - lo que uno agregó y el otro no tenía  -> se agrega
+   - lo que uno borró y el otro no tocó    -> se respeta el borrado
+   - lo que uno borró y el otro editó      -> se conserva (no perder trabajo)
+   - lo que ambos editaron                 -> gana el de este equipo        */
+function unirLista(base, mio, nube, unirItem){
+  const idx=a=>{ const m=new Map(); (a||[]).forEach(x=>{ if(x&&x.id!=null) m.set(x.id,x); }); return m; };
+  const B=idx(base), M=idx(mio), N=idx(nube);
+  const out=[]; const vistos=new Set();
+  const orden=[...(mio||[]).map(x=>x&&x.id), ...(nube||[]).map(x=>x&&x.id)];
+  for(const id of orden){
+    if(id==null || vistos.has(id)) continue; vistos.add(id);
+    const b=B.get(id), m=M.get(id), n=N.get(id);
+    if(m && n){ out.push(unirItem ? unirItem(b,m,n) : (!b ? m : (!igual(m,b) ? m : n))); }
+    else if(m && !n){ if(!b || !igual(m,b)) out.push(m); }   // nuevo mío, o lo borraron pero yo lo edité
+    else if(!m && n){ if(!b || !igual(n,b)) out.push(n); }   // nuevo de la nube, o lo borré pero lo editaron
+  }
+  // elementos sin id (listas simples): se juntan sin repetir
+  const sueltos=[...(mio||[]),...(nube||[])].filter(x=>!x || x.id==null);
+  const yaVisto=new Set();
+  sueltos.forEach(x=>{ const k=JSON.stringify(x); if(!yaVisto.has(k)){ yaVisto.add(k); out.push(x); } });
+  return out;
+}
+
+function unirSimple(b,m,n){ if(!b) return m; if(!igual(m,b)) return m; return n; }
+
+function unirColumna(b,m,n){
+  const c={...n, ...m};
+  c.tasks = unirLista(b&&b.tasks, m.tasks, n.tasks, unirSimple);
+  const bf=b&&b.meta&&b.meta.fin, mf=m.meta&&m.meta.fin, nf=n.meta&&n.meta.fin;
+  if(mf||nf){
+    c.meta={...(n.meta||{}), ...(m.meta||{})};
+    c.meta.fin={...(nf||{}), ...(mf||{})};
+    c.meta.fin.pagosList  = unirLista(bf&&bf.pagosList,  mf&&mf.pagosList,  nf&&nf.pagosList,  unirSimple);
+    c.meta.fin.gastosList = unirLista(bf&&bf.gastosList, mf&&mf.gastosList, nf&&nf.gastosList, unirSimple);
+  }
+  return c;
+}
+function unirArea(b,m,n){
+  const a={...n, ...m};
+  a.columns = unirLista(b&&b.columns, m.columns, n.columns, unirColumna);
+  return a;
+}
+/* La vista (qué pantalla estás mirando, el zoom, el tema) es de cada
+   equipo: no tiene por qué saltar porque el otro cambió de pantalla.
+   El temporizador sí es compartido. */
+function unirUi(mio, nube){
+  const u={...(mio||{})};
+  if(nube && 'timer' in nube) u.timer=nube.timer;
+  return u;
+}
+
+function unirTablero(base, mio, nube){
+  const out={...nube, ...mio};
+  out.ui = unirUi(mio.ui, nube.ui);
+  out.areas = unirLista(base&&base.areas, mio.areas, nube.areas, unirArea);
+  ['presupuestos','inbox','ingresosGenerales','gastosGenerales','timeLog'].forEach(k=>{
+    if(mio[k] || nube[k]) out[k]=unirLista(base&&base[k], mio[k], nube[k], unirSimple);
+  });
+  if(mio.equipo || nube.equipo){
+    out.equipo=[...new Set([...(mio.equipo||[]), ...(nube.equipo||[])])];
+  }
+  if(mio.mkt || nube.mkt){
+    out.mkt={...(nube.mkt||{}), ...(mio.mkt||{})};
+    out.mkt.posts = unirLista(base&&base.mkt&&base.mkt.posts,
+                              mio.mkt&&mio.mkt.posts, nube.mkt&&nube.mkt.posts, unirSimple);
+    out.mkt.marcas=[...new Set([...((mio.mkt&&mio.mkt.marcas)||[]), ...((nube.mkt&&nube.mkt.marcas)||[])])];
+  }
+  return out;
+}
+
+/* Cuando el guardado condicional detecta que la nube cambió: traemos su
+   versión, la fusionamos con la nuestra y volvemos a subir. Antes de
+   tocar nada se guarda una copia de respaldo por si acaso. */
+let fusionN=0;
+async function fusionarConLaNube(){
+  if(fusionN>=4){                       // algo raro pasa: no insistir en círculo
+    cloudAviso('error','no se pudo combinar con el otro equipo');
+    programarReintento(); return;
+  }
+  fusionN++;
+  try{
+    const { data:row, error } = await SB.from('tablero_estado')
+      .select('data,actualizado_en').eq('id',1).single();
+    if(error || !row || !row.data){ programarReintento(); return; }
+
+    try{ localStorage.setItem('rc_antes_de_fusionar_v1', JSON.stringify({
+      cuando:new Date().toISOString(), data:soloCompartido(data) })); }catch(e){}
+
+    const mio=soloCompartido(data);
+    const fusion=unirTablero(BASE, mio, row.data);
+    const traidos=cuantoTrajo(mio, fusion);
+    const miPersonal=data.personal;
+
+    APLICANDO_NUBE=true;
+    try{
+      data=fusion; if(miPersonal) data.personal=miPersonal;
+      normalizeData(); render();
+    } finally { APLICANDO_NUBE=false; }
+
+    ULTIMA_NUBE=row.actualizado_en;
+    BASE=copia(row.data);
+    if(traidos>0) cloudDot('sync');
+    marcarPendiente();
+    await cloudPushNow(false);          // ahora sí, sobre la versión correcta
+  }catch(e){
+    console.warn('fusionarConLaNube', e);
+    programarReintento();
+  }
+}
+
+/* Cuenta qué trajo el otro equipo, para poder contarlo en el aviso */
+function cuantoTrajo(mio, fusion){
+  const contar=d=>{
+    let n=0;
+    (d.areas||[]).forEach(a=>(a.columns||[]).forEach(c=>{ n+=1+((c.tasks||[]).length); }));
+    n+=(d.presupuestos||[]).length+(d.inbox||[]).length;
+    return n;
+  };
+  return Math.max(0, contar(fusion)-contar(mio));
+}
+
+/* ---- Sección Personal: tabla aparte, privada por persona -------------
+   El tablero de proyectos es compartido. Lo personal de cada uno vive en
+   tablero_personal, donde Supabase solo deja leer la propia fila. El
+   navegador de la otra persona nunca llega a descargarlo. */
+let personalT=null;
+/* ¿Existe ya la tabla privada para lo personal?
+   null = todavía no sabemos · true = sí, lo personal va aparte
+   false = no existe, así que lo personal sigue viajando dentro del tablero
+   compartido, exactamente como antes. Así esta versión funciona igual con
+   la base de datos preparada o sin preparar, y cambia sola el día que
+   corras el SQL. */
+let PERSONAL_APARTE = null;
+async function personalLoad(){
+  if(!SB || !CLOUD_USER) return false;
+  try{
+    const { data:row, error } = await SB.from('tablero_personal')
+      .select('data').eq('user_id', CLOUD_USER).maybeSingle();
+    if(error){
+      PERSONAL_APARTE = false;          // la tabla no está: no separamos nada
+      console.info('tablero_personal no disponible: lo personal sigue en el tablero compartido');
+      return false;
+    }
+    PERSONAL_APARTE = true;
+    if(row && row.data && (row.data.movs || row.data.cats)){ data.personal = row.data; ensurePersonal(); return true; }
+    return false;
+  }catch(e){ console.warn('personalLoad ex', e); return false; }
+}
+function personalPush(){
+  clearTimeout(personalT);
+  personalT=setTimeout(personalPushNow, 500);
+}
+async function personalPushNow(){
+  if(!SB || !CLOUD_READY || !CLOUD_USER || !data.personal) return;
+  if(PERSONAL_APARTE !== true) return;          // sin tabla, no hay nada que hacer
+  try{
+    const { error } = await SB.from('tablero_personal').upsert({
+      user_id: CLOUD_USER, data: data.personal, actualizado_en: new Date().toISOString()
+    }, { onConflict:'user_id' });
+    if(error){ PERSONAL_APARTE=false; console.warn('personalPush', error.message); }
+  }catch(e){ console.warn('personalPushNow ex', e); }
+}
+
 async function cloudPushNow(initial){
   if(!SB || !CLOUD_READY) return;
   if(CLOUD_PUSHING) { cloudPush(); return; }
@@ -3904,15 +4109,31 @@ async function cloudPushNow(initial){
   try{
     data._rev = CLIENT_ID + ':' + Date.now();
     lastCloudRev = data._rev;
-    const payload = { data: data, actualizado_en: new Date().toISOString() };
+    // La sección Personal NO viaja en el tablero compartido: se guarda
+    // aparte, en una tabla que solo puede leer su propio dueño.
+    const compartido = soloCompartido(data);
+    const payload = { data: compartido, actualizado_en: new Date().toISOString() };
     if(CLOUD_USER) payload.por_user = CLOUD_USER;
-    const { error } = await SB.from('tablero_estado').update(payload).eq('id',1);
+    personalPush();
+
+    // Guardado CONDICIONAL: solo escribe si la nube sigue como la dejamos.
+    // Si otro equipo escribió en el intertanto, no la pisamos: fusionamos.
+    let q = SB.from('tablero_estado').update(payload).eq('id',1);
+    if(ULTIMA_NUBE && !initial) q = q.eq('actualizado_en', ULTIMA_NUBE);
+    const { data: filas, error } = await q.select('actualizado_en');
+
     if(error){
       console.warn('cloudPush', error.message);
       cloudAviso('error', error.message); programarReintento();
+    } else if(!filas || filas.length===0){
+      // nadie actualizó nuestra fila => la nube cambió bajo nuestros pies
+      CLOUD_PUSHING=false;
+      await fusionarConLaNube();
+      return;
     } else {
-      limpiarPendiente(); reintentoN=0; clearTimeout(reintentoT);
+      limpiarPendiente(); reintentoN=0; clearTimeout(reintentoT); fusionN=0;
       ULTIMA_NUBE = payload.actualizado_en;     // lo mío, no hace falta traerlo
+      guardarBase(data);                        // desde aquí se compara la próxima vez
       cloudAviso(null); cloudDot('ok');
     }
   }catch(e){
@@ -3967,9 +4188,19 @@ function cloudSubscribe(){
         // no pisar mientras estoy editando algo
         if(escribiendoAhora()) return;
         if(document.querySelector('.modal-ov')) return;
+        if(!soyDueno() && d.personal) delete d.personal;
+        const miP = data.personal, miU = data.ui;
+        const hayPend = !!pendienteDesde();
+        const nuevoD = hayPend ? unirTablero(BASE, soloCompartido(data), d) : d;
         APLICANDO_NUBE=true;
-        try{ data = d; normalizeData(); render(); } finally { APLICANDO_NUBE=false; }
+        try{
+          data = nuevoD; if(miP) data.personal=miP;
+          if(miU) data.ui=unirUi(miU, d.ui);
+          normalizeData(); render();
+        } finally { APLICANDO_NUBE=false; }
+        guardarBase(d);
         cloudDot('sync');
+        if(hayPend){ marcarPendiente(); cloudPush(); }
         ULTIMA_NUBE = new Date().toISOString();
       }catch(e){ console.warn('realtime', e); }
     })
@@ -4010,9 +4241,21 @@ async function cloudRevisar(){
         const nubeTs=full.actualizado_en?Date.parse(full.actualizado_en):0;
         if(pend && pend>nubeTs){ cloudPushNow(false); return; }
         if(!mio && !escribiendoAhora() && !document.querySelector('.modal-ov')){
+          if(!soyDueno() && d.personal) delete d.personal;
+          const miPers = data.personal;          // lo personal no viaja: es mío
+          const miUi = data.ui;
+          // Si aquí quedaban cambios sin subir, no se reemplaza: se combinan.
+          const combinar = !!pend;
+          const nuevo = combinar ? unirTablero(BASE, soloCompartido(data), d) : d;
           APLICANDO_NUBE=true;
-          try{ data=d; normalizeData(); render(); } finally { APLICANDO_NUBE=false; }
+          try{
+            data=nuevo; if(miPers) data.personal=miPers;
+            if(miUi) data.ui=unirUi(miUi, d.ui);   // la vista es de cada equipo
+            normalizeData(); render();
+          } finally { APLICANDO_NUBE=false; }
+          guardarBase(d);
           cloudDot('sync');
+          if(combinar){ marcarPendiente(); cloudPush(); }
         }
       }
     }
@@ -4064,6 +4307,7 @@ function showLogin(msg){
       const { data:res, error } = await SB.auth.signInWithPassword({ email:email.value.trim(), password:pass.value });
       if(error){ err.textContent='Correo o contraseña incorrectos.'; btn.textContent='Entrar'; btn.disabled=false; return; }
       CLOUD_USER = res.user.id;
+      CLOUD_MAIL = res.user.email || null;
       ov.remove();
       await afterLogin();
     }catch(e){ err.textContent='No se pudo conectar. Revisa tu internet.'; btn.textContent='Entrar'; btn.disabled=false; }
@@ -4085,6 +4329,13 @@ async function afterLogin(){
   CLOUD_READY=false;
   const got = await cloudLoad();      // trae datos de la nube (o sube los locales)
   CLOUD_READY=true;
+  await personalLoad();               // lo personal viene de su tabla privada
+  // Migración: si lo personal todavía venía dentro del tablero compartido,
+  // lo mandamos a su tabla y lo sacamos de ahí en el próximo guardado.
+  if(soyDueno() && data.personal && (data.personal.movs||[]).length){
+    await personalPushNow();
+    cloudPush();
+  }
   render();
   cloudSubscribe();
   if(pendienteDesde()) cloudPushNow(false);   // quedó algo sin subir: súbelo ya
@@ -4104,6 +4355,7 @@ async function boot(){
   const { data:sess } = await SB.auth.getSession();
   if(sess && sess.session){
     CLOUD_USER = sess.session.user.id;
+    CLOUD_MAIL = sess.session.user.email || null;
     render();               // muestra algo mientras trae la nube
     await afterLogin();
   } else {
@@ -4116,7 +4368,7 @@ async function cloudLogout(){
   if(!SB){ return; }
   if(!confirm('¿Cerrar sesión? Tendrás que ingresar tu correo y contraseña de nuevo.')) return;
   try{ await SB.auth.signOut(); }catch(e){}
-  CLOUD_READY=false; CLOUD_USER=null;
+  CLOUD_READY=false; CLOUD_USER=null; CLOUD_MAIL=null;
   showLogin();
 }
 
