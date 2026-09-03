@@ -18,7 +18,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-  window.RC_VERSION = '1.3.1';   // subir esto en cada versión nueva
+  window.RC_VERSION = '1.3.2';   // subir esto en cada versión nueva
   // Conexión a tu base de datos Supabase (tablero-rc)
   window.RC_SUPABASE_URL  = 'https://sdzybsyxyfbyrynhumig.supabase.co';
   window.RC_SUPABASE_ANON = 'sb_publishable_ycU09SDH1kMB5PqnfzkguQ_TIVFvmw-';
@@ -971,6 +971,7 @@ input,select,textarea{font-family:inherit}
       <button id="fileLinkBtn" onclick="cloudLogout()" title="Cerrar sesión de tu cuenta">⏻ Cerrar sesión</button>
       <button onclick="openJsonModal('export')">↗ Copiar JSON</button>
       <button onclick="openJsonModal('import')">↙ Pegar JSON</button>
+      <button onclick="verDiario()">⟲ Diario de sincronización</button>
     </div>
   </aside>
 
@@ -1129,6 +1130,40 @@ let saveTimer=null;
    que es justo cuando se perdían tareas: escribías, el guardado en la nube
    fallaba en silencio, recargabas y la copia de la nube pisaba la local. */
 const PEND_KEY='rc_pendiente_v1';
+
+/* ---- Diario de sincronización ------------------------------------------
+   Deja por escrito qué pasó con la nube. Sin esto, cuando algo falla no
+   queda rastro y hay que adivinar. Se ve desde el menú, abajo. */
+const DIARIO_KEY='rc_diario_v1';
+function apunte(msg){
+  try{
+    const d=JSON.parse(localStorage.getItem(DIARIO_KEY)||'[]');
+    d.push({t:new Date().toISOString(), m:String(msg)});
+    while(d.length>300) d.shift();
+    localStorage.setItem(DIARIO_KEY, JSON.stringify(d));
+  }catch(e){}
+}
+function verDiario(){
+  let d=[]; try{ d=JSON.parse(localStorage.getItem(DIARIO_KEY)||'[]'); }catch(e){}
+  const equipo = (window.rcApp? 'escritorio' : 'web') + ' · v' + (window.RC_VERSION||'?');
+  const txt = 'Diario de sincronización · ' + equipo + '\n' +
+    'pendiente: ' + (pendienteDesde()? new Date(pendienteDesde()).toISOString() : 'no') + '\n' +
+    'última nube: ' + (typeof ULTIMA_NUBE!=='undefined' ? ULTIMA_NUBE : '?') + '\n\n' +
+    d.map(x=>x.t.slice(11,19)+'  '+x.m).join('\n');
+  const ov=el('div',{class:'modal-ov',onclick:e=>{ if(e.target===ov) ov.remove(); }});
+  const ta=el('textarea',{spellcheck:'false'}); ta.value=txt;
+  const copiar=el('button',{class:'primary',onclick:()=>{
+    ta.select();
+    const ok=()=>{ copiar.textContent='✓ Copiado'; setTimeout(()=>copiar.textContent='Copiar',1600); };
+    if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(ta.value).then(ok).catch(()=>{try{document.execCommand('copy');ok();}catch(_){}});
+    else { try{document.execCommand('copy');ok();}catch(_){} }
+  }},'Copiar');
+  ov.append(el('div',{class:'modal'}, el('h4',{text:'Diario de sincronización'}), ta,
+    el('div',{class:'m-row'}, el('button',{onclick:()=>ov.remove()},'Cerrar'), copiar),
+    el('div',{class:'hint',text:'Cópialo y pégaselo a Claude si el tablero no está sincronizando bien.'})));
+  document.body.append(ov);
+  setTimeout(()=>ta.select(),60);
+}
 function marcarPendiente(){
   try{ localStorage.setItem(PEND_KEY, String(Date.now())); }catch(e){}
 }
@@ -3868,7 +3903,7 @@ async function cloudLoad(){
       const nube = row.actualizado_en ? Date.parse(row.actualizado_en) : 0;
       if(pend && pend > nube){
         // lo de aquí es más nuevo: NO lo pisamos, lo subimos.
-        console.info('cambios locales sin subir, más nuevos que la nube: los subo');
+        apunte('tenía cambios sin subir más nuevos que la nube: los subo');
         ULTIMA_NUBE = row.actualizado_en || null;
         CLOUD_READY=true;
         await cloudPushNow(true);
@@ -3877,6 +3912,7 @@ async function cloudLoad(){
       if(pend && pend <= nube){
         // la nube va más adelante: guardo una copia de lo local antes de reemplazar
         try{ localStorage.setItem('rc_respaldo_v1', localStorage.getItem(KEY)||''); }catch(e){}
+        apunte('la nube iba más adelante: adopto su versión y guardo respaldo');
         cloudAviso('pisado');
       } else {
         limpiarPendiente();
@@ -4012,13 +4048,22 @@ function unirTablero(base, mio, nube){
 /* Cuando el guardado condicional detecta que la nube cambió: traemos su
    versión, la fusionamos con la nuestra y volvemos a subir. Antes de
    tocar nada se guarda una copia de respaldo por si acaso. */
-let fusionN=0;
+let fusionN=0, fusionT=0;
 async function fusionarConLaNube(){
-  if(fusionN>=4){                       // algo raro pasa: no insistir en círculo
-    cloudAviso('error','no se pudo combinar con el otro equipo');
+  // El contador se reinicia solo tras un minuto tranquilo. Antes solo volvía
+  // a cero al guardar bien, así que si se rendía cuatro veces quedaba muerto
+  // PARA SIEMPRE: no guardaba, y por no guardar nunca se reiniciaba. Había
+  // que cerrar y abrir la app para que volviera a sincronizar.
+  const ahora=Date.now();
+  if(ahora-fusionT>60000) fusionN=0;
+  fusionT=ahora;
+  if(fusionN>=4){                       // demasiados choques seguidos: esperar
+    apunte('demasiados choques seguidos, espero un poco');
+    cloudAviso('error','reintentando combinar con el otro equipo');
     programarReintento(); return;
   }
   fusionN++;
+  apunte('la nube cambió mientras guardaba: combinando (intento '+fusionN+')');
   try{
     const { data:row, error } = await SB.from('tablero_estado')
       .select('data,actualizado_en').eq('id',1).single();
@@ -4124,6 +4169,7 @@ async function cloudPushNow(initial){
 
     if(error){
       console.warn('cloudPush', error.message);
+      apunte('ERROR al guardar: '+error.message);
       cloudAviso('error', error.message); programarReintento();
     } else if(!filas || filas.length===0){
       // nadie actualizó nuestra fila => la nube cambió bajo nuestros pies
@@ -4132,6 +4178,7 @@ async function cloudPushNow(initial){
       return;
     } else {
       limpiarPendiente(); reintentoN=0; clearTimeout(reintentoT); fusionN=0;
+      apunte('guardado en la nube');
       ULTIMA_NUBE = payload.actualizado_en;     // lo mío, no hace falta traerlo
       guardarBase(data);                        // desde aquí se compara la próxima vez
       cloudAviso(null); cloudDot('ok');
@@ -4350,7 +4397,7 @@ async function boot(){
   if(!sb){
     // sin librería/config: modo local (respaldo). Antes esto pasaba en
     // silencio y uno creía estar guardando en la nube sin estarlo.
-    render(); cloudAviso('local'); return;
+    render(); apunte('sin conexión con la nube: modo local'); cloudAviso('local'); return;
   }
   const { data:sess } = await SB.auth.getSession();
   if(sess && sess.session){
