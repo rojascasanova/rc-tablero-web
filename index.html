@@ -18,7 +18,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-  window.RC_VERSION = '1.3.2';   // subir esto en cada versión nueva
+  window.RC_VERSION = '1.3.3';   // subir esto en cada versión nueva
   // Conexión a tu base de datos Supabase (tablero-rc)
   window.RC_SUPABASE_URL  = 'https://sdzybsyxyfbyrynhumig.supabase.co';
   window.RC_SUPABASE_ANON = 'sb_publishable_ycU09SDH1kMB5PqnfzkguQ_TIVFvmw-';
@@ -1214,7 +1214,7 @@ async function linkFile(){
       const [h]=await window.showOpenFilePicker({types:[{description:'JSON',accept:{'application/json':['.json']}}]});
       fileHandle=h;
       const f=await h.getFile(); const txt=await f.text();
-      try{ const d=JSON.parse(txt); if(d&&d.areas){ data=d; if(!data.inbox)data.inbox=[]; if(!data.ui)data.ui={theme:'dark',hideDone:true,view:'board',currentAreaId:null,zoom:1}; if(!data.ui.zoom)data.ui.zoom=1; if(!data.ui.currentAreaId)data.ui.currentAreaId=data.areas[0]&&data.areas[0].id; } }catch(_){ alert('El archivo no tiene un tablero válido; se mantiene el actual y se sobrescribirá al guardar.'); }
+      try{ const d=JSON.parse(txt); if(d&&d.areas){ adoptar(d); if(!data.inbox)data.inbox=[]; if(!data.ui)data.ui={theme:'dark',hideDone:true,view:'board',currentAreaId:null,zoom:1}; if(!data.ui.zoom)data.ui.zoom=1; if(!data.ui.currentAreaId)data.ui.currentAreaId=data.areas[0]&&data.areas[0].id; } }catch(_){ alert('El archivo no tiene un tablero válido; se mantiene el actual y se sobrescribirá al guardar.'); }
     } else {
       fileHandle=await window.showSaveFilePicker({suggestedName:'rc-tablero.json',types:[{description:'JSON',accept:{'application/json':['.json']}}]});
     }
@@ -1257,8 +1257,8 @@ async function checkExternalChange(){
     const d=JSON.parse(await f.text());
     if(!(d&&d.areas)) return;
     lastKnownMod=f.lastModified;
-    const ui=data&&data.ui;                              // conserva vista/zoom/tema locales
-    data=d;
+    const ui=copia(data&&data.ui);                       // conserva vista/zoom/tema locales
+    adoptar(d);
     if(!data.inbox)data.inbox=[];
     if(!data.ui)data.ui={theme:'dark',hideDone:true,view:'board',currentAreaId:null,zoom:1};
     if(ui){ data.ui.view=ui.view; data.ui.zoom=ui.zoom; data.ui.theme=ui.theme; data.ui.hideDone=ui.hideDone;
@@ -1282,7 +1282,7 @@ async function restoreFile(){
       try{
         const f=await h.getFile(); lastKnownMod=f.lastModified;
         const d=JSON.parse(await f.text());
-        if(d&&d.areas){ data=d; if(!data.inbox)data.inbox=[]; if(!data.ui.zoom)data.ui.zoom=1; render(); }
+        if(d&&d.areas){ adoptar(d); if(!data.inbox)data.inbox=[]; if(!data.ui.zoom)data.ui.zoom=1; render(); }
       }catch(_){}
     }
   }catch(e){}
@@ -3832,7 +3832,7 @@ function openJsonModal(mode){
       try{
         const d=JSON.parse(ta.value);
         if(!d||!d.areas) throw 0;
-        data=d;
+        adoptar(d);
         normalizeData();
         ov.remove(); render(); save();
         if(CLOUD_READY) cloudDot('saving');
@@ -3853,7 +3853,7 @@ function importData(){
   const inp=el('input',{type:'file',accept:'.json,application/json'});
   inp.addEventListener('change',()=>{
     const f=inp.files[0]; if(!f) return; const r=new FileReader();
-    r.onload=()=>{ try{ const d=JSON.parse(r.result); if(d.areas){ data=d; if(!data.ui.currentAreaId)data.ui.currentAreaId=data.areas[0]?.id; render(); } else alert('Archivo no válido.'); }catch(e){ alert('No se pudo leer el archivo.'); } };
+    r.onload=()=>{ try{ const d=JSON.parse(r.result); if(d.areas){ adoptar(d); if(!data.ui.currentAreaId)data.ui.currentAreaId=data.areas[0]?.id; render(); } else alert('Archivo no válido.'); }catch(e){ alert('No se pudo leer el archivo.'); } };
     r.readAsText(f);
   });
   inp.click();
@@ -3922,9 +3922,10 @@ async function cloudLoad(){
       if(!soyDueno() && d.personal) delete d.personal;
       const miPersonal = data.personal;          // lo mío no se pisa
       const miUi = data.ui;
-      data = d;
+      const uiFinal = miUi ? unirUi(miUi, d.ui) : null;   // cada equipo mantiene su vista
+      adoptar(d);
       if(soyDueno() && miPersonal && !d.personal) data.personal = miPersonal;
-      if(miUi) data.ui = unirUi(miUi, d.ui);      // cada equipo mantiene su vista
+      if(uiFinal){ if(data.ui) aplicarEnSitio(data.ui, uiFinal); else data.ui = uiFinal; }
       // re-normalizar (misma lógica de load())
       normalizeData();
       lastCloudRev = d._rev || null;
@@ -3973,6 +3974,56 @@ function soloCompartido(d){
 function copia(x){ try{ return JSON.parse(JSON.stringify(x)); }catch(e){ return null; } }
 function guardarBase(d){ BASE = copia(soloCompartido(d||data)); }
 function igual(a,b){ return JSON.stringify(a)===JSON.stringify(b); }
+
+/* ====================================================================
+   POR QUÉ SE PERDÍAN COSAS (sobre todo en Marketing)
+   Antes, al traer la versión de la nube se hacía `data = otraCosa`: el
+   tablero entero pasaba a ser un objeto NUEVO. Pero una ficha o un
+   editor que ya estaba abierto se había quedado apuntando al objeto
+   VIEJO. Entonces, al apretar Guardar, la publicación se escribía en un
+   tablero que ya nadie miraba, y desaparecía sin dejar rastro ni aviso.
+   La solución no es poner más candados: es no cambiar nunca el tablero
+   por otro. Aquí se vuelca el contenido nuevo DENTRO del que ya existe,
+   conservando la identidad de cada proyecto, cada ficha y cada
+   publicación. Lo que tengas abierto sigue siendo lo mismo que está en
+   pantalla.
+   ==================================================================== */
+function aplicarEnSitio(dst, src){
+  if(dst === src) return dst;
+  if(Array.isArray(dst) && Array.isArray(src)){
+    const porId=new Map();
+    dst.forEach(x=>{ if(x && typeof x==='object' && x.id!=null && !porId.has(x.id)) porId.set(x.id,x); });
+    const salida=src.map(s=>{
+      if(s && typeof s==='object' && !Array.isArray(s) && s.id!=null && porId.has(s.id)){
+        const viejo=porId.get(s.id);
+        if(viejo!==s) aplicarEnSitio(viejo, s);
+        return viejo;                       // se conserva el objeto de siempre
+      }
+      return s;
+    });
+    dst.length=0; for(const x of salida) dst.push(x);
+    return dst;
+  }
+  if(dst && src && typeof dst==='object' && typeof src==='object'
+     && !Array.isArray(dst) && !Array.isArray(src)){
+    for(const k of Object.keys(dst)) if(!(k in src)) delete dst[k];
+    for(const k of Object.keys(src)){
+      const a=dst[k], b=src[k];
+      if(a && b && typeof a==='object' && typeof b==='object'
+         && Array.isArray(a)===Array.isArray(b)) aplicarEnSitio(a,b);
+      else dst[k]=b;
+    }
+    return dst;
+  }
+  return src;
+}
+/* Cambia el contenido del tablero sin cambiar el tablero. */
+function adoptar(nuevo){
+  if(!nuevo) return data;
+  if(!data || typeof data!=='object'){ data=nuevo; return data; }
+  aplicarEnSitio(data, nuevo);
+  return data;
+}
 
 /* Une dos listas de objetos con id, sabiendo de dónde partieron.
    - lo que uno agregó y el otro no tenía  -> se agrega
@@ -4079,7 +4130,7 @@ async function fusionarConLaNube(){
 
     APLICANDO_NUBE=true;
     try{
-      data=fusion; if(miPersonal) data.personal=miPersonal;
+      adoptar(fusion); if(miPersonal) data.personal=miPersonal;
       normalizeData(); render();
     } finally { APLICANDO_NUBE=false; }
 
@@ -4156,8 +4207,11 @@ async function cloudPushNow(initial){
     lastCloudRev = data._rev;
     // La sección Personal NO viaja en el tablero compartido: se guarda
     // aparte, en una tabla que solo puede leer su propio dueño.
-    const compartido = soloCompartido(data);
-    const payload = { data: compartido, actualizado_en: new Date().toISOString() };
+    // Copia congelada de lo que se envia. Lo que escribas MIENTRAS viaja este
+    // guardado no va dentro, asi que tampoco puede darse por guardado.
+    const enviado = copia(soloCompartido(data)) || soloCompartido(data);
+    const marcaPend = pendienteDesde();
+    const payload = { data: enviado, actualizado_en: new Date().toISOString() };
     if(CLOUD_USER) payload.por_user = CLOUD_USER;
     personalPush();
 
@@ -4177,10 +4231,12 @@ async function cloudPushNow(initial){
       await fusionarConLaNube();
       return;
     } else {
-      limpiarPendiente(); reintentoN=0; clearTimeout(reintentoT); fusionN=0;
+      // Solo se limpia el pendiente si nadie escribio durante el viaje.
+      if(pendienteDesde()===marcaPend) limpiarPendiente();
+      reintentoN=0; clearTimeout(reintentoT); fusionN=0;
       apunte('guardado en la nube');
       ULTIMA_NUBE = payload.actualizado_en;     // lo mío, no hace falta traerlo
-      guardarBase(data);                        // desde aquí se compara la próxima vez
+      BASE = enviado;                           // lo que la nube tiene de verdad
       cloudAviso(null); cloudDot('ok');
     }
   }catch(e){
@@ -4241,14 +4297,17 @@ function cloudSubscribe(){
         const nuevoD = hayPend ? unirTablero(BASE, soloCompartido(data), d) : d;
         APLICANDO_NUBE=true;
         try{
-          data = nuevoD; if(miP) data.personal=miP;
-          if(miU) data.ui=unirUi(miU, d.ui);
+          const ui = miU ? unirUi(miU, d.ui) : null;
+          adoptar(nuevoD); if(miP) data.personal=miP;
+          if(ui){ if(data.ui) aplicarEnSitio(data.ui, ui); else data.ui=ui; }
           normalizeData(); render();
         } finally { APLICANDO_NUBE=false; }
         guardarBase(d);
         cloudDot('sync');
         if(hayPend){ marcarPendiente(); cloudPush(); }
-        ULTIMA_NUBE = new Date().toISOString();
+        // La fecha REAL de la fila. Antes se ponía la hora de este equipo, que
+        // nunca coincide con la de la nube: cada guardado chocaba de mentira.
+        if(payload.new && payload.new.actualizado_en) ULTIMA_NUBE = payload.new.actualizado_en;
       }catch(e){ console.warn('realtime', e); }
     })
     .subscribe();
@@ -4280,14 +4339,21 @@ async function cloudRevisar(){
       if(!e2 && full && full.data && full.data.areas){
         const d=full.data;
         const mio = d._rev && d._rev.split(':')[0]===CLIENT_ID;
-        ULTIMA_NUBE = full.actualizado_en;
         // Si aquí hay cambios sin subir MÁS NUEVOS que los de la nube, no los
         // pisamos: los subimos. Sin esto, un guardado fallido más este
         // vigilante borrarían la tarea recién escrita.
         const pend=pendienteDesde();
         const nubeTs=full.actualizado_en?Date.parse(full.actualizado_en):0;
+        // OJO con el orden: marcar esta version como "ya vista" sin haberla
+        // adoptado era una via silenciosa de perder trabajo. El guardado
+        // condicional comparaba contra ella, calzaba, y pisaba la nube sin
+        // fusionar nada. Ahora solo se da por vista cuando de verdad se
+        // adopta; si no, el proximo guardado choca y fusiona, que es lo sano.
         if(pend && pend>nubeTs){ cloudPushNow(false); return; }
-        if(!mio && !escribiendoAhora() && !document.querySelector('.modal-ov')){
+        if(mio){ ULTIMA_NUBE = full.actualizado_en; return; }
+        if(escribiendoAhora() || document.querySelector('.modal-ov')) return;
+        ULTIMA_NUBE = full.actualizado_en;
+        {
           if(!soyDueno() && d.personal) delete d.personal;
           const miPers = data.personal;          // lo personal no viaja: es mío
           const miUi = data.ui;
@@ -4296,8 +4362,9 @@ async function cloudRevisar(){
           const nuevo = combinar ? unirTablero(BASE, soloCompartido(data), d) : d;
           APLICANDO_NUBE=true;
           try{
-            data=nuevo; if(miPers) data.personal=miPers;
-            if(miUi) data.ui=unirUi(miUi, d.ui);   // la vista es de cada equipo
+            const ui = miUi ? unirUi(miUi, d.ui) : null;   // la vista es de cada equipo
+            adoptar(nuevo); if(miPers) data.personal=miPers;
+            if(ui){ if(data.ui) aplicarEnSitio(data.ui, ui); else data.ui=ui; }
             normalizeData(); render();
           } finally { APLICANDO_NUBE=false; }
           guardarBase(d);
