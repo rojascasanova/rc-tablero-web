@@ -18,7 +18,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-  window.RC_VERSION = '1.3.3';   // subir esto en cada versión nueva
+  window.RC_VERSION = '1.3.4';   // subir esto en cada versión nueva
   // Conexión a tu base de datos Supabase (tablero-rc)
   window.RC_SUPABASE_URL  = 'https://sdzybsyxyfbyrynhumig.supabase.co';
   window.RC_SUPABASE_ANON = 'sb_publishable_ycU09SDH1kMB5PqnfzkguQ_TIVFvmw-';
@@ -3899,21 +3899,17 @@ async function cloudLoad(){
     const d = row && row.data;
     if(d && d.areas && d.areas.length){
       // ¿este equipo tiene cambios que nunca confirmó la nube?
+      // ANTES SE ELEGIA UN GANADOR Y EL OTRO LADO SE PERDIA ENTERO:
+      //   · si lo de aquí era más nuevo, se subía todo encima sin condición y
+      //     se borraba lo que el otro equipo había escrito mientras tanto;
+      //   · si era más viejo, se adoptaba la nube y se perdía lo de aquí.
+      // Ahora, en los dos casos, se combinan las dos versiones y se sube el
+      // resultado. Nadie pisa a nadie.
       const pend = pendienteDesde();
-      const nube = row.actualizado_en ? Date.parse(row.actualizado_en) : 0;
-      if(pend && pend > nube){
-        // lo de aquí es más nuevo: NO lo pisamos, lo subimos.
-        apunte('tenía cambios sin subir más nuevos que la nube: los subo');
-        ULTIMA_NUBE = row.actualizado_en || null;
-        CLOUD_READY=true;
-        await cloudPushNow(true);
-        return false;
-      }
-      if(pend && pend <= nube){
-        // la nube va más adelante: guardo una copia de lo local antes de reemplazar
+      const combinar = !!pend;
+      if(combinar){
         try{ localStorage.setItem('rc_respaldo_v1', localStorage.getItem(KEY)||''); }catch(e){}
-        apunte('la nube iba más adelante: adopto su versión y guardo respaldo');
-        cloudAviso('pisado');
+        apunte('tenía cambios sin subir: los combino con la nube al entrar');
       } else {
         limpiarPendiente();
       }
@@ -3923,7 +3919,8 @@ async function cloudLoad(){
       const miPersonal = data.personal;          // lo mío no se pisa
       const miUi = data.ui;
       const uiFinal = miUi ? unirUi(miUi, d.ui) : null;   // cada equipo mantiene su vista
-      adoptar(d);
+      const entrante = combinar ? unirTablero(leerBase(), soloCompartido(data), d) : d;
+      adoptar(entrante);
       if(soyDueno() && miPersonal && !d.personal) data.personal = miPersonal;
       if(uiFinal){ if(data.ui) aplicarEnSitio(data.ui, uiFinal); else data.ui = uiFinal; }
       // re-normalizar (misma lógica de load())
@@ -3931,6 +3928,14 @@ async function cloudLoad(){
       lastCloudRev = d._rev || null;
       ULTIMA_NUBE = row.actualizado_en || null;
       guardarBase(d);
+      if(combinar){
+        // subir lo combinado, CON condición: si la nube cambió otra vez, se
+        // vuelve a fusionar en vez de pisarla.
+        CLOUD_READY=true;
+        marcarPendiente();
+        render();
+        await cloudPushNow(false);
+      }
       return true;
     }
     // la nube está vacía: subir lo que haya local como punto de partida
@@ -3972,7 +3977,19 @@ function soloCompartido(d){
   const o={}; for(const k in d){ if(k!=='personal') o[k]=d[k]; } return o;
 }
 function copia(x){ try{ return JSON.parse(JSON.stringify(x)); }catch(e){ return null; } }
-function guardarBase(d){ BASE = copia(soloCompartido(d||data)); }
+/* BASE es la última foto conocida de la nube: sirve para distinguir "esto lo
+   agregué yo" de "esto lo borró el otro". Antes vivía solo en memoria, así que
+   al cerrar la app se perdía y al volver a abrir no había con qué comparar. */
+const BASE_KEY='rc_base_v1';
+function ponerBase(x){
+  BASE = x || null;
+  try{ if(BASE) localStorage.setItem(BASE_KEY, JSON.stringify(BASE)); else localStorage.removeItem(BASE_KEY); }catch(e){}
+}
+function leerBase(){
+  if(BASE) return BASE;
+  try{ const v=localStorage.getItem(BASE_KEY); return v?JSON.parse(v):null; }catch(e){ return null; }
+}
+function guardarBase(d){ ponerBase(copia(soloCompartido(d||data))); }
 function igual(a,b){ return JSON.stringify(a)===JSON.stringify(b); }
 
 /* ====================================================================
@@ -4135,7 +4152,7 @@ async function fusionarConLaNube(){
     } finally { APLICANDO_NUBE=false; }
 
     ULTIMA_NUBE=row.actualizado_en;
-    BASE=copia(row.data);
+    ponerBase(copia(row.data));
     if(traidos>0) cloudDot('sync');
     marcarPendiente();
     await cloudPushNow(false);          // ahora sí, sobre la versión correcta
@@ -4201,6 +4218,14 @@ async function personalPushNow(){
 async function cloudPushNow(initial){
   if(!SB || !CLOUD_READY) return;
   if(CLOUD_PUSHING) { cloudPush(); return; }
+  if(!initial && !ULTIMA_NUBE){
+    // No sabemos en qué quedó la nube (por ejemplo, si falló la lectura al
+    // abrir). Escribir ahora la pisaría a ciegas: primero se lee.
+    apunte('no sé cómo quedó la nube: la leo antes de guardar');
+    const ok = await cloudLoad();
+    if(ULTIMA_NUBE || ok) cloudPush(); else programarReintento();
+    return;
+  }
   CLOUD_PUSHING=true;
   try{
     data._rev = CLIENT_ID + ':' + Date.now();
@@ -4236,7 +4261,7 @@ async function cloudPushNow(initial){
       reintentoN=0; clearTimeout(reintentoT); fusionN=0;
       apunte('guardado en la nube');
       ULTIMA_NUBE = payload.actualizado_en;     // lo mío, no hace falta traerlo
-      BASE = enviado;                           // lo que la nube tiene de verdad
+      ponerBase(enviado);                       // lo que la nube tiene de verdad
       cloudAviso(null); cloudDot('ok');
     }
   }catch(e){
