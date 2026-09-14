@@ -18,7 +18,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-  window.RC_VERSION = '1.3.4';   // subir esto en cada versión nueva
+  window.RC_VERSION = '1.4.0';   // subir esto en cada versión nueva
   // Conexión a tu base de datos Supabase (tablero-rc)
   window.RC_SUPABASE_URL  = 'https://sdzybsyxyfbyrynhumig.supabase.co';
   window.RC_SUPABASE_ANON = 'sb_publishable_ycU09SDH1kMB5PqnfzkguQ_TIVFvmw-';
@@ -922,6 +922,55 @@ input,select,textarea{font-family:inherit}
   .modal{width:94vw;max-width:94vw}
   .tmr-widget{right:10px;bottom:10px;width:170px}
 }
+/* ===== GASTO PUBLICITARIO ===== */
+.ads-view{max-width:960px}
+.ads-sec{font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.6px;text-transform:uppercase;color:var(--faint);margin:0 0 10px}
+.ads-chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+.ads-chip{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--dim);border:1px solid var(--line);border-radius:20px;padding:6px 14px}
+.ads-chip:hover{border-color:var(--line-strong)}
+.ads-chip.on{background:var(--paper);color:var(--bg);border-color:var(--paper)}
+.ads-tot{display:flex;align-items:baseline;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.ads-tot b{font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:500;color:var(--paper)}
+.ads-tot span{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--faint)}
+.ads-meses{border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:26px}
+.ads-mrow{display:grid;grid-template-columns:130px 74px minmax(0,1fr) 124px;gap:12px;align-items:center;padding:11px 14px;border-top:1px solid var(--line)}
+.ads-mrow:first-child{border-top:none}
+.ads-mrow.h{background:var(--panel)}
+.ads-mrow.h>span{font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.6px;text-transform:uppercase;color:var(--faint)}
+.ads-mes{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--paper)}
+.ads-n{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--faint)}
+.ads-barra{height:6px;border-radius:3px;background:var(--panel-2);overflow:hidden;min-width:0}
+.ads-barra i{display:block;height:100%;background:var(--dim);border-radius:3px}
+.ads-monto{font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--paper);text-align:right}
+.ads-tbl{border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.ads-row{display:grid;grid-template-columns:104px minmax(0,1fr) 112px 124px 34px;gap:10px;align-items:center;padding:10px 14px;border-top:1px solid var(--line)}
+.ads-row:first-child{border-top:none}
+.ads-row.h{background:var(--panel)}
+.ads-row.h>span{font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.6px;text-transform:uppercase;color:var(--faint)}
+.ads-fecha{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--faint)}
+.ads-marca{font-family:'IBM Plex Mono',monospace;font-size:10px;background:var(--panel);border:1px solid var(--line);padding:2px 8px;border-radius:20px;color:var(--dim);white-space:nowrap;justify-self:start;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.ads-plat{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--dim)}
+.ads-del{color:var(--faint);font-size:15px;width:26px;height:26px;border-radius:6px;justify-self:end}
+.ads-del:hover{color:var(--paper);background:var(--panel-2)}
+.ads-vacio{padding:26px 16px;text-align:center;font-size:12.5px;color:var(--dim);line-height:1.7}
+.ads-imp{margin-top:26px;border:1px solid var(--line);border-radius:12px;padding:16px}
+.ads-campos{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:12px}
+.ads-lbl{font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.5px;text-transform:uppercase;color:var(--faint);display:block;margin-bottom:4px}
+.ads-ta{width:100%;min-height:132px;background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:10px 12px;color:var(--paper);font-family:'IBM Plex Mono',monospace;font-size:11.5px;line-height:1.65;resize:vertical}
+.ads-ta:focus{outline:none;border-color:var(--line-strong)}
+.ads-acc{display:flex;align-items:center;gap:12px;margin-top:12px;flex-wrap:wrap}
+.ads-go{font-family:'IBM Plex Mono',monospace;font-size:12px;background:var(--paper);color:var(--bg);border-radius:9px;padding:10px 16px;font-weight:500}
+.ads-go[disabled]{opacity:.35;cursor:default}
+.ads-estado{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--dim);line-height:1.5}
+.ads-hint{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--faint);font-style:italic;margin-top:10px;line-height:1.6}
+@media(max-width:760px){
+  .ads-mrow{grid-template-columns:96px 52px minmax(0,1fr) 100px;gap:8px;padding:10px}
+  .ads-row{grid-template-columns:78px minmax(0,1fr) 100px 30px;gap:8px;padding:9px 10px}
+  .ads-row .ads-plat{display:none}
+  .ads-campos{grid-template-columns:1fr}
+  .ads-view{max-width:100%}
+}
+
 </style>
 </head>
 <body>
@@ -954,6 +1003,9 @@ input,select,textarea{font-family:inherit}
       </button>
       <button class="nav-item" data-view="marketing" onclick="setView('marketing')">
         <span class="ico">◇</span> Marketing <span class="count" id="mktCount"></span>
+      </button>
+      <button class="nav-item" data-view="publicidad" onclick="setView('publicidad')">
+        <span class="ico">◎</span> Gasto publicitario <span class="count" id="adsCount"></span>
       </button>
       <button class="nav-item" data-view="archivados" onclick="setView('archivados')">
         <span class="ico">⌦</span> Archivados <span class="count" id="archCount"></span>
@@ -1444,6 +1496,9 @@ function renderSidebar(){
   document.getElementById('inboxCount').textContent = data.inbox.filter(pending).length || '';
   const pc=document.getElementById('presCount'); if(pc) pc.textContent = (data.presupuestos||[]).filter(p=>p.estado==='enviado').length || '';
   const ac=document.getElementById('archCount'); if(ac) ac.textContent = data.areas.reduce((s2,a)=>s2+a.columns.filter(c=>c.archived).length,0) || '';
+  const adc=document.getElementById('adsCount');
+  if(adc){ const mesActual=todayStr().slice(0,7);
+    adc.textContent = ADS.filter(r=>String(r.fecha||'').slice(0,7)===mesActual).length || ''; }
   const mc=document.getElementById('mktCount'); if(mc){ const pend=(data.mkt&&data.mkt.posts||[]).filter(p=>p.ig==='pend'||p.li==='pend'||p.ig==='prog'||p.li==='prog').length; mc.textContent=pend||''; }
 
   const list=document.getElementById('projectList'); list.innerHTML='';
@@ -1468,6 +1523,7 @@ function renderTop(){
   else if(data.ui.view==='personal'){ t.textContent='Personal'; s.textContent='tus gastos e ingresos · en qué se va la plata'; }
   else if(data.ui.view==='tiempo'){ t.textContent='Tiempo'; s.textContent='horas por proyecto y por día · navega por mes'; }
   else if(data.ui.view==='marketing'){ t.textContent='Marketing'; s.textContent='qué publicaste, dónde y cuándo · IG y LinkedIn'; }
+  else if(data.ui.view==='publicidad'){ t.textContent='Gasto publicitario'; s.textContent='lo que se va en anuncios, por marca · Meta y otras plataformas'; }
   else if(data.ui.view==='archivados'){ const n=data.areas.reduce((s2,a)=>s2+a.columns.filter(c=>c.archived).length,0); t.textContent='Archivados'; s.textContent=n+' proyecto'+(n===1?'':'s')+' archivado'+(n===1?'':'s')+' · siguen contando en Finanzas'; }
   else if(data.ui.view==='presupuestos'){ t.textContent='Presupuestos'; s.textContent='embudo de cotizaciones · enviado → aprobado / caído'; }
   else if(data.ui.view==='emitir'){ t.textContent='Emitir presupuesto'; s.textContent='generador EMEP · UF del día automática'; }
@@ -1529,6 +1585,9 @@ function renderPlataBar(){
 function renderMain(){
   if(data.ui.view==='personal' && !soyDueno()) data.ui.view='hoy';
   const root=document.getElementById('mainContent'); root.innerHTML='';
+  // La pestaña de publicidad se redibuja sola; si dejamos de mostrarla hay que
+  // soltar ese pintador o quedaría escribiendo en nodos que ya no existen.
+  if(data.ui.view!=='publicidad') ADS_PINTAR=null;
   if(data.ui.view==='hoy') return renderToday(root);
   if(data.ui.view==='inbox') return renderInbox(root);
   if(data.ui.view==='equipo') return renderEquipo(root);
@@ -1536,6 +1595,7 @@ function renderMain(){
   if(data.ui.view==='personal') return renderPersonal(root);
   if(data.ui.view==='tiempo') return renderTiempo(root);
   if(data.ui.view==='marketing') return renderMarketing(root);
+  if(data.ui.view==='publicidad') return renderPublicidad(root);
   if(data.ui.view==='archivados') return renderArchivados(root);
   if(data.ui.view==='presupuestos') return renderPresupuestos(root);
   if(data.ui.view==='emitir') return renderEmitir(root);
@@ -3558,6 +3618,355 @@ function setView(v){ if(v==='emitir'){ PENDING_PRESUP=null; EDITING_ID=null; }
   // si no es su tablero, la vista Personal no se abre ni escribiendo la ruta
   if(v==='personal' && !soyDueno()) v='hoy';
   data.ui.view=v; render(); }
+
+/* ====================================================================
+   GASTO PUBLICITARIO
+   Control de lo que se gasta en anuncios, separado por marca. A
+   diferencia del resto del tablero (que vive en un bloque único y
+   funciona sin conexión), esto vive en su propia tabla de Supabase,
+   una fila por cobro y con permisos por usuario: cada cuenta solo ve
+   lo suyo. Por eso esta pestaña necesita sesión y conexión.
+   ==================================================================== */
+const ADS_MARCAS = ['EMEP','IEN','Molde','Arq Market','Propertwin','rojas.casanova'];
+const ADS_PLATAFORMAS = ['Meta','Google','LinkedIn','TikTok'];
+const ADS_MESES_L = ['enero','febrero','marzo','abril','mayo','junio','julio',
+                     'agosto','septiembre','octubre','noviembre','diciembre'];
+const ADS_FMT = new Intl.NumberFormat('es-CL',{ style:'currency', currency:'CLP', maximumFractionDigits: 0 });
+function adsClp(n){ return ADS_FMT.format(Math.round(n||0)); }
+
+let ADS = [];                 // filas de gasto_publicitario
+let ADS_MENSUAL = null;       // filas de la vista de resumen (null = calcular aquí)
+let ADS_LISTO = false, ADS_CARGANDO = false, ADS_ERROR = null;
+let ADS_MARCA = '__todas';    // filtro de la vista
+let ADS_PINTAR = null;        // redibuja solo resumen+tabla, sin rehacer la pestaña
+// Lo que hay escrito en el importador. Se guarda aquí para que un refresco
+// de la nube no te borre lo que acabas de pegar.
+let ADS_TEXTO = '', ADS_IMP_MARCA = ADS_MARCAS[0], ADS_IMP_PLAT = 'Meta', ADS_IMP_CUENTA = '';
+let ADS_MSG = '';
+
+/* ---- Lectura de la pantalla "Actividad de pago" de Meta --------------
+   La app de Meta no deja exportar: se copia la pantalla y llega así:
+       12 de septiembre de 2026
+       Pagado
+       $20.444
+   Función pura: recibe el texto pegado y devuelve [{fecha, monto}].
+   · fechas en español largo
+   · montos en formato chileno (el punto es separador de miles)
+   · varias filas pueden compartir fecha: se guardan todas
+   · si la captura viene cortada arriba o abajo, lo que no se entiende
+     se descarta sin romper el resto                                    */
+function parsearActividadMeta(texto){
+  const MESES = { enero:1, febrero:2, marzo:3, abril:4, mayo:5, junio:6, julio:7,
+                  agosto:8, septiembre:9, setiembre:9, octubre:10, noviembre:11, diciembre:12 };
+  const sinTildes = t => String(t).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+  const salida = [];
+  if(texto == null) return salida;
+
+  let fecha = null;      // la última fecha vista; un monto se cuelga de ella
+  let saltar = false;    // el cobro no se concretó (fallido / rechazado / reembolsado)
+
+  for(const crudo of String(texto).split(/\r?\n/)){
+    const linea = crudo.trim();
+    if(!linea) continue;
+
+    const f = sinTildes(linea).match(/^(\d{1,2})\s+de\s+([a-z]+)\s+de\s+(\d{4})$/);
+    if(f){
+      const dia = parseInt(f[1],10), mes = MESES[f[2]], anio = parseInt(f[3],10);
+      fecha = (mes && dia>=1 && dia<=31)
+        ? anio + '-' + String(mes).padStart(2,'0') + '-' + String(dia).padStart(2,'0')
+        : null;                       // fecha que no se entiende: se descarta
+      saltar = false;
+      continue;
+    }
+
+    const estado = sinTildes(linea);
+    if(/^(fallid|rechazad|cancelad|reembols|devuelt)/.test(estado)){ saltar = true; continue; }
+    if(/^(pagad|completad|correct|exitos)/.test(estado)){ saltar = false; continue; }
+
+    // $20.444   ·   20.444 CLP   ·   $20.444,00
+    const m = linea.match(/^(?:\$\s*([\d][\d.]*(?:,\d{1,2})?)|([\d][\d.]*(?:,\d{1,2})?)\s*CLP)$/i);
+    if(m){
+      const bruto = (m[1] || m[2]).replace(/,\d{1,2}$/,'').replace(/\./g,'');
+      const monto = parseInt(bruto,10);
+      if(fecha && !saltar && Number.isFinite(monto) && monto > 0) salida.push({ fecha, monto });
+      saltar = false;
+      continue;
+    }
+    // cualquier otra cosa (encabezados, restos de la captura) se ignora
+  }
+  return salida;
+}
+if(typeof window !== 'undefined') window.parsearActividadMeta = parsearActividadMeta;
+
+/* ---- Datos ---------------------------------------------------------- */
+async function adsCargar(){
+  if(ADS_CARGANDO) return;
+  if(!SB || !CLOUD_USER){
+    ADS = []; ADS_MENSUAL = null; ADS_LISTO = true;
+    ADS_ERROR = 'sesion';
+    if(ADS_PINTAR) ADS_PINTAR();
+    return;
+  }
+  ADS_CARGANDO = true; ADS_ERROR = null;
+  if(ADS_PINTAR) ADS_PINTAR();
+  try{
+    const [filas, resumen] = await Promise.all([
+      SB.from('gasto_publicitario')
+        .select('id,marca,plataforma,fecha,monto,moneda,campana,cuenta,documento,url_respaldo,nota')
+        .order('fecha',{ ascending:false }),
+      SB.from('gasto_publicitario_mensual')
+        .select('mes,marca,plataforma,cobros,total')
+        .order('mes',{ ascending:false })
+    ]);
+    if(filas.error) throw filas.error;
+    ADS = filas.data || [];
+    // Si la vista de resumen no existe o falla, el resumen se calcula aquí
+    // con las mismas filas: la pestaña sigue sirviendo igual.
+    ADS_MENSUAL = resumen.error ? null : (resumen.data || []);
+    ADS_LISTO = true;
+  }catch(e){
+    ADS = []; ADS_MENSUAL = null; ADS_LISTO = true;
+    ADS_ERROR = (e && e.message) || 'No se pudo leer el gasto publicitario.';
+    console.warn('adsCargar', e);
+  }
+  ADS_CARGANDO = false;
+  if(ADS_PINTAR) ADS_PINTAR();
+}
+
+function adsFiltradas(){
+  return ADS_MARCA === '__todas' ? ADS : ADS.filter(x => x.marca === ADS_MARCA);
+}
+
+/* Resumen por mes. Usa la vista de Supabase si está; si no, las filas. */
+function adsResumen(){
+  const acc = new Map();
+  const sumar = (mes, cobros, total) => {
+    const k = String(mes).slice(0,7);
+    const a = acc.get(k) || { mes:k, cobros:0, total:0 };
+    a.cobros += cobros; a.total += total; acc.set(k, a);
+  };
+  if(ADS_MENSUAL){
+    ADS_MENSUAL.forEach(r => {
+      if(ADS_MARCA !== '__todas' && r.marca !== ADS_MARCA) return;
+      sumar(r.mes, Number(r.cobros)||0, Number(r.total)||0);
+    });
+  } else {
+    adsFiltradas().forEach(r => sumar(r.fecha, 1, Number(r.monto)||0));
+  }
+  return [...acc.values()].sort((a,b) => b.mes.localeCompare(a.mes));
+}
+
+function adsMesLargo(k){
+  const [a,m] = String(k).split('-');
+  return (ADS_MESES_L[parseInt(m,10)-1] || '') + ' ' + a;
+}
+
+async function adsEliminar(fila){
+  if(!SB || !fila || !fila.id) return;
+  if(!confirm('¿Eliminar este cobro de ' + adsClp(fila.monto) + '?')) return;
+  try{
+    const { error } = await SB.from('gasto_publicitario').delete().eq('id', fila.id);
+    if(error) throw error;
+    ADS = ADS.filter(x => x.id !== fila.id);
+    ADS_MENSUAL = null;              // el resumen se recalcula con las filas
+    ADS_MSG = 'Cobro eliminado.';
+    if(ADS_PINTAR) ADS_PINTAR();
+    adsCargar();                     // y se vuelve a leer para quedar al día
+  }catch(e){
+    ADS_MSG = 'No se pudo eliminar: ' + ((e && e.message) || 'error');
+    if(ADS_PINTAR) ADS_PINTAR();
+  }
+}
+
+async function adsImportar(){
+  const cobros = parsearActividadMeta(ADS_TEXTO);
+  if(!cobros.length){ ADS_MSG = 'No encontré ningún cobro en ese texto.'; if(ADS_PINTAR) ADS_PINTAR(); return; }
+  if(!SB || !CLOUD_USER){ ADS_MSG = 'Necesitas haber iniciado sesión para guardar.'; if(ADS_PINTAR) ADS_PINTAR(); return; }
+  const marca = (ADS_IMP_MARCA||'').trim();
+  if(!marca){ ADS_MSG = 'Elige la marca antes de guardar.'; if(ADS_PINTAR) ADS_PINTAR(); return; }
+
+  const cuenta = (ADS_IMP_CUENTA||'').trim();
+  const filas = cobros.map(c => ({
+    user_id: CLOUD_USER,
+    marca,
+    plataforma: ADS_IMP_PLAT || 'Meta',
+    fecha: c.fecha,
+    monto: c.monto,
+    moneda: 'CLP',
+    cuenta
+  }));
+
+  ADS_MSG = 'Guardando ' + filas.length + ' cobro' + (filas.length===1?'':'s') + '…';
+  if(ADS_PINTAR) ADS_PINTAR();
+  try{
+    const { data:metidas, error } = await SB.from('gasto_publicitario')
+      .upsert(filas, { onConflict:'user_id,plataforma,fecha,monto,cuenta', ignoreDuplicates:true })
+      .select('id');
+    if(error) throw error;
+    const nuevas = (metidas||[]).length;
+    const repetidas = filas.length - nuevas;
+    ADS_MSG = 'Detecté ' + filas.length + ' cobro' + (filas.length===1?'':'s') + ' · entraron ' + nuevas +
+              (repetidas>0 ? ' · ' + repetidas + ' ya estaba' + (repetidas===1?'':'n') + ' registrado' + (repetidas===1?'':'s') : '');
+    if(nuevas>0) ADS_TEXTO = '';
+    ADS_MENSUAL = null;
+    await adsCargar();
+    const ta = document.getElementById('adsTexto'); if(ta) ta.value = ADS_TEXTO;
+  }catch(e){
+    ADS_MSG = 'No se pudo guardar: ' + ((e && e.message) || 'error');
+    console.warn('adsImportar', e);
+  }
+  if(ADS_PINTAR) ADS_PINTAR();
+}
+
+/* ---- Vista ---------------------------------------------------------- */
+function renderPublicidad(root){
+  const view = el('div',{ class:'today-view ads-view' });
+
+  // filtro por marca
+  const chips = el('div',{ class:'ads-chips' });
+  const ponerChip = (valor, etiqueta) => {
+    chips.append(el('button',{ class:'ads-chip'+(ADS_MARCA===valor?' on':''),
+      onclick:()=>{ ADS_MARCA = valor; if(ADS_PINTAR) ADS_PINTAR(); pintarChips(); } }, etiqueta));
+  };
+  const pintarChips = () => {
+    [...chips.children].forEach(b => b.classList.toggle('on', b.textContent === (ADS_MARCA==='__todas'?'Todas':ADS_MARCA)));
+  };
+  ponerChip('__todas','Todas');
+  ADS_MARCAS.forEach(m => ponerChip(m, m));
+  view.append(chips);
+
+  const resumenWrap = el('div');
+  const tablaWrap = el('div');
+  view.append(resumenWrap, tablaWrap);
+
+  // ---- importador (se construye una sola vez: no se redibuja al refrescar)
+  const imp = el('div',{ class:'ads-imp' });
+  imp.append(el('p',{ class:'ads-sec', text:'Importar actividad de pago' }));
+
+  const selMarca = el('select',{ class:'ask-in' });
+  ADS_MARCAS.forEach(m => { const o = el('option',{ value:m, text:m }); if(m===ADS_IMP_MARCA) o.selected = true; selMarca.append(o); });
+  selMarca.addEventListener('change', ()=>{ ADS_IMP_MARCA = selMarca.value; });
+
+  const selPlat = el('select',{ class:'ask-in' });
+  ADS_PLATAFORMAS.forEach(p => { const o = el('option',{ value:p, text:p }); if(p===ADS_IMP_PLAT) o.selected = true; selPlat.append(o); });
+  selPlat.addEventListener('change', ()=>{ ADS_IMP_PLAT = selPlat.value; });
+
+  const inpCuenta = el('input',{ class:'ask-in', type:'text', value:ADS_IMP_CUENTA, placeholder:'opcional' });
+  inpCuenta.addEventListener('input', ()=>{ ADS_IMP_CUENTA = inpCuenta.value; });
+
+  imp.append(el('div',{ class:'ads-campos' },
+    el('div',{}, el('label',{ class:'ads-lbl', text:'Marca' }), selMarca),
+    el('div',{}, el('label',{ class:'ads-lbl', text:'Plataforma' }), selPlat),
+    el('div',{}, el('label',{ class:'ads-lbl', text:'ID de cuenta' }), inpCuenta)));
+
+  const ta = el('textarea',{ class:'ads-ta', id:'adsTexto', spellcheck:'false',
+    placeholder:'12 de septiembre de 2026\nPagado\n$20.444' });
+  ta.value = ADS_TEXTO;
+  const btn = el('button',{ class:'ads-go', onclick:()=>adsImportar() }, 'Guardar cobros');
+  const detectados = el('span',{ class:'ads-estado' });
+  const mensaje = el('span',{ class:'ads-estado' });
+
+  const revisar = () => {
+    ADS_TEXTO = ta.value;
+    const n = parsearActividadMeta(ADS_TEXTO).length;
+    detectados.textContent = n ? ('Detecté ' + n + ' cobro' + (n===1?'':'s')) : 'Sin cobros detectados';
+    if(n) btn.removeAttribute('disabled'); else btn.setAttribute('disabled','');
+  };
+  ta.addEventListener('input', revisar);
+  ta.addEventListener('paste', ()=>setTimeout(revisar,0));
+
+  imp.append(ta, el('div',{ class:'ads-acc' }, btn, detectados, mensaje));
+  imp.append(el('p',{ class:'ads-hint',
+    text:'En la app de Meta: Configuración de pagos → Actividad de pago. Selecciona la lista, cópiala y pégala aquí. Importar dos veces la misma pantalla no duplica nada.' }));
+  view.append(imp);
+  revisar();
+
+  // ---- pintado de resumen y tabla
+  ADS_PINTAR = () => {
+    mensaje.textContent = ADS_MSG;
+    resumenWrap.innerHTML = ''; tablaWrap.innerHTML = '';
+
+    if(ADS_CARGANDO && !ADS_LISTO){
+      resumenWrap.append(el('div',{ class:'ads-vacio', text:'Leyendo el gasto publicitario…' }));
+      return;
+    }
+    if(ADS_ERROR === 'sesion'){
+      resumenWrap.append(el('div',{ class:'ads-vacio',
+        text:'Entra con tu cuenta para ver el gasto publicitario. Se guarda en tu base de datos, no en este equipo.' }));
+      return;
+    }
+    if(ADS_ERROR){
+      resumenWrap.append(el('div',{ class:'ads-vacio' },
+        el('div',{ text:'No pude leer la tabla de gasto publicitario.' }),
+        el('div',{ style:'margin-top:8px;font-family:\'IBM Plex Mono\',monospace;font-size:11px;color:var(--faint)', text:ADS_ERROR }),
+        el('div',{ style:'margin-top:8px', text:'Si dice que la tabla no existe, falta correr la migración gasto-publicitario.sql en Supabase → SQL Editor.' })));
+      return;
+    }
+
+    const filas = adsFiltradas();
+    const meses = adsResumen();
+    const total = filas.reduce((s,r)=>s+(Number(r.monto)||0), 0);
+
+    // --- resumen mensual
+    resumenWrap.append(el('p',{ class:'ads-sec', text:'Resumen mensual' }));
+    if(!meses.length){
+      resumenWrap.append(el('div',{ class:'ads-meses' },
+        el('div',{ class:'ads-vacio',
+          text: ADS.length
+            ? 'No hay cobros de ' + ADS_MARCA + '. Cambia el filtro o importa la actividad de esa cuenta.'
+            : 'Todavía no hay cobros registrados. Pega abajo la actividad de pago de Meta.' })));
+    } else {
+      resumenWrap.append(el('div',{ class:'ads-tot' },
+        el('b',{ text: adsClp(total) }),
+        el('span',{ text: filas.length + ' cobro' + (filas.length===1?'':'s') +
+                          ' · ' + meses.length + ' mes' + (meses.length===1?'':'es') +
+                          (ADS_MARCA==='__todas' ? ' · todas las marcas' : ' · ' + ADS_MARCA) })));
+      const tope = Math.max(...meses.map(m=>m.total), 1);
+      const tbl = el('div',{ class:'ads-meses' });
+      tbl.append(el('div',{ class:'ads-mrow h' },
+        el('span',{ text:'Mes' }), el('span',{ text:'Cobros' }), el('span',{ text:'' }), el('span',{ style:'text-align:right', text:'Total' })));
+      meses.forEach(m => {
+        const barra = el('div',{ class:'ads-barra' });
+        barra.append(el('i',{ style:'width:' + Math.max(2, Math.round(m.total/tope*100)) + '%' }));
+        tbl.append(el('div',{ class:'ads-mrow' },
+          el('span',{ class:'ads-mes', text: adsMesLargo(m.mes) }),
+          el('span',{ class:'ads-n', text: String(m.cobros) }),
+          barra,
+          el('span',{ class:'ads-monto', text: adsClp(m.total) })));
+      });
+      resumenWrap.append(tbl);
+    }
+
+    // --- movimientos
+    tablaWrap.append(el('p',{ class:'ads-sec', text:'Movimientos' }));
+    if(!filas.length){
+      tablaWrap.append(el('div',{ class:'ads-tbl' },
+        el('div',{ class:'ads-vacio',
+          text: ADS.length
+            ? 'No hay cobros de ' + ADS_MARCA + ' todavía.'
+            : 'Todavía no hay cobros registrados. Pega abajo la actividad de pago de Meta.' })));
+      return;
+    }
+    const t = el('div',{ class:'ads-tbl' });
+    t.append(el('div',{ class:'ads-row h' },
+      el('span',{ text:'Fecha' }), el('span',{ text:'Marca' }),
+      el('span',{ class:'ads-plat', text:'Plataforma' }),
+      el('span',{ style:'text-align:right', text:'Monto' }), el('span',{ text:'' })));
+    filas.forEach(r => {
+      t.append(el('div',{ class:'ads-row' },
+        el('span',{ class:'ads-fecha', text:r.fecha }),
+        el('span',{ class:'ads-marca', text:r.marca }),
+        el('span',{ class:'ads-plat', text:r.plataforma }),
+        el('span',{ class:'ads-monto', text: adsClp(r.monto) }),
+        el('button',{ class:'ads-del', title:'Eliminar este cobro', onclick:()=>adsEliminar(r) }, '×')));
+    });
+    tablaWrap.append(t);
+  };
+
+  ADS_PINTAR();
+  root.append(view);
+  if(!ADS_LISTO && !ADS_CARGANDO) adsCargar();
+}
 
 /* ===== TEMPORIZADOR POR PROYECTO ===== */
 let TIMER_INT=null;
