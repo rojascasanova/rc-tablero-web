@@ -18,7 +18,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-  window.RC_VERSION = '1.4.0';   // subir esto en cada versión nueva
+  window.RC_VERSION = '1.4.1';   // subir esto en cada versión nueva
   // Conexión a tu base de datos Supabase (tablero-rc)
   window.RC_SUPABASE_URL  = 'https://sdzybsyxyfbyrynhumig.supabase.co';
   window.RC_SUPABASE_ANON = 'sb_publishable_ycU09SDH1kMB5PqnfzkguQ_TIVFvmw-';
@@ -4456,6 +4456,20 @@ function adoptar(nuevo){
    - lo que uno borró y el otro no tocó    -> se respeta el borrado
    - lo que uno borró y el otro editó      -> se conserva (no perder trabajo)
    - lo que ambos editaron                 -> gana el de este equipo        */
+/* ====================================================================
+   BORRAR SOLO CUANDO CONSTA QUE SE BORRÓ
+   Antes, al combinar, la app DEDUCÍA los borrados: "esto está en la nube,
+   no está en mi copia y nadie lo editó, entonces yo lo borré". Esa
+   deducción es falsa cada vez que mi copia simplemente está incompleta o
+   vieja: el presupuesto recién creado en el otro equipo desaparecía, y
+   encima el borrado se subía a la nube.
+   Ahora los borrados se ANOTAN (data.borrados) cuando de verdad ocurren,
+   y combinar solo quita lo que aparece anotado. Sin anotación, no se
+   borra nada: en el peor caso reaparece algo que borraste, que se
+   arregla en dos clics; perder trabajo, no.
+   ==================================================================== */
+let TUMBAS = new Set();      // ids borrados a propósito, de cualquier equipo
+
 function unirLista(base, mio, nube, unirItem){
   const idx=a=>{ const m=new Map(); (a||[]).forEach(x=>{ if(x&&x.id!=null) m.set(x.id,x); }); return m; };
   const B=idx(base), M=idx(mio), N=idx(nube);
@@ -4463,10 +4477,10 @@ function unirLista(base, mio, nube, unirItem){
   const orden=[...(mio||[]).map(x=>x&&x.id), ...(nube||[]).map(x=>x&&x.id)];
   for(const id of orden){
     if(id==null || vistos.has(id)) continue; vistos.add(id);
+    if(TUMBAS.has(id)) continue;                              // borrado a propósito
     const b=B.get(id), m=M.get(id), n=N.get(id);
-    if(m && n){ out.push(unirItem ? unirItem(b,m,n) : (!b ? m : (!igual(m,b) ? m : n))); }
-    else if(m && !n){ if(!b || !igual(m,b)) out.push(m); }   // nuevo mío, o lo borraron pero yo lo edité
-    else if(!m && n){ if(!b || !igual(n,b)) out.push(n); }   // nuevo de la nube, o lo borré pero lo editaron
+    if(m && n) out.push(unirItem ? unirItem(b,m,n) : unirSimple(b,m,n));
+    else out.push(m || n);                                    // está en un lado: se conserva
   }
   // elementos sin id (listas simples): se juntan sin repetir
   const sueltos=[...(mio||[]),...(nube||[])].filter(x=>!x || x.id==null);
@@ -4475,7 +4489,54 @@ function unirLista(base, mio, nube, unirItem){
   return out;
 }
 
-function unirSimple(b,m,n){ if(!b) return m; if(!igual(m,b)) return m; return n; }
+/* Con base: gana quien lo cambió. SIN base no se puede saber quién cambió
+   qué, y ahí la copia de este equipo NO puede imponerse: sería revertir en
+   silencio lo que el otro equipo acaba de hacer (así se "desaprobaba" un
+   presupuesto recién aprobado). Sin base manda la nube, que es lo común. */
+function unirSimple(b,m,n){ if(!b) return n; if(!igual(m,b)) return m; return n; }
+
+/* La lista de borrados se junta de los dos lados y se poda a 120 días:
+   pasado ese tiempo el borrado ya llegó a todas partes. */
+function unirBorrados(a, b){
+  const lim = Date.now() - 120*24*3600*1000;
+  const m = new Map();
+  [...(a||[]), ...(b||[])].forEach(x=>{
+    if(!x || x.id==null) return;
+    const t = +x.t || 0;
+    if(t && t < lim) return;
+    const y = m.get(x.id);
+    if(!y || t > (+y.t||0)) m.set(x.id, {id:x.id, t:t||Date.now()});
+  });
+  return [...m.values()];
+}
+
+/* Compara lo que la nube tenía con lo que estamos subiendo: lo que ya no
+   está es un borrado de verdad, hecho aquí. Se anota. No hace falta tocar
+   cada botón de eliminar: el borrado se detecta solo, al guardar. */
+function idsDe(d){
+  const s=new Set();
+  const lista=a=>(a||[]).forEach(x=>{ if(x&&x.id!=null) s.add(x.id); });
+  if(!d) return s;
+  lista(d.presupuestos); lista(d.inbox); lista(d.ingresosGenerales);
+  lista(d.gastosGenerales); lista(d.timeLog);
+  lista(d.mkt&&d.mkt.posts);
+  (d.areas||[]).forEach(a=>{ if(!a) return; s.add(a.id);
+    (a.columns||[]).forEach(c=>{ if(!c) return; s.add(c.id);
+      lista(c.tasks);
+      const f=c.meta&&c.meta.fin; if(f){ lista(f.pagosList); lista(f.gastosList); }
+    });
+  });
+  return s;
+}
+function anotarBorrados(antes, ahora){
+  if(!antes) return;
+  const A=idsDe(antes), B=idsDe(ahora);
+  const nuevos=[];
+  A.forEach(id=>{ if(!B.has(id)) nuevos.push({id, t:Date.now()}); });
+  if(!nuevos.length) return;
+  data.borrados = unirBorrados(data.borrados, nuevos);
+  if(ahora) ahora.borrados = data.borrados;
+}
 
 function unirColumna(b,m,n){
   const c={...n, ...m};
@@ -4505,6 +4566,9 @@ function unirUi(mio, nube){
 
 function unirTablero(base, mio, nube){
   const out={...nube, ...mio};
+  // los borrados de los dos lados, juntos, y solo esos se quitan
+  out.borrados = unirBorrados(mio.borrados, nube.borrados);
+  TUMBAS = new Set(out.borrados.map(x=>x.id));
   out.ui = unirUi(mio.ui, nube.ui);
   out.areas = unirLista(base&&base.areas, mio.areas, nube.areas, unirArea);
   ['presupuestos','inbox','ingresosGenerales','gastosGenerales','timeLog'].forEach(k=>{
@@ -4644,6 +4708,7 @@ async function cloudPushNow(initial){
     // Copia congelada de lo que se envia. Lo que escribas MIENTRAS viaja este
     // guardado no va dentro, asi que tampoco puede darse por guardado.
     const enviado = copia(soloCompartido(data)) || soloCompartido(data);
+    anotarBorrados(BASE, enviado);          // lo que ya no está, se borró aquí
     const marcaPend = pendienteDesde();
     const payload = { data: enviado, actualizado_en: new Date().toISOString() };
     if(CLOUD_USER) payload.por_user = CLOUD_USER;
