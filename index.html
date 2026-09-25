@@ -18,7 +18,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-  window.RC_VERSION = '2.1.0';   // subir esto en cada versión nueva
+  window.RC_VERSION = '2.1.1';   // subir esto en cada versión nueva
   // Conexión a tu base de datos Supabase (tablero-rc)
   window.RC_SUPABASE_URL  = 'https://sdzybsyxyfbyrynhumig.supabase.co';
   window.RC_SUPABASE_ANON = 'sb_publishable_ycU09SDH1kMB5PqnfzkguQ_TIVFvmw-';
@@ -1112,6 +1112,41 @@ input,select,textarea{font-family:inherit}
   .rv-r>span:nth-child(3),.rv-r>span:nth-child(4),.rv-r>span:nth-child(5),.rv-r>span:nth-child(6){display:none}
 }
 
+/* ---- importar del portal ---- */
+.tr-pasos{font-size:12.5px;color:var(--dim);line-height:1.75;margin:16px 0 12px}
+.tr-pega{width:100%;background:var(--card);border:1px solid var(--line);border-radius:9px;padding:10px 12px;
+  color:var(--paper);font-family:'IBM Plex Mono',monospace;font-size:11.5px;line-height:1.5;outline:none;resize:vertical}
+.tr-pega:focus{border-color:var(--line-strong)}
+.tr-resumen{font-size:12.5px;color:var(--paper);margin-top:12px;min-height:18px}
+.tr-previo{margin-top:10px;max-height:300px;overflow:auto;border:1px solid var(--line);border-radius:10px}
+.tr-previo:empty{display:none}
+.tr-prev{display:grid;grid-template-columns:.9fr 1.5fr .8fr 1.2fr .8fr;gap:10px;align-items:center;
+  padding:9px 12px;border-top:1px solid var(--line);font-size:12px}
+.tr-prev:first-child{border-top:none}
+.tr-prev.gris{opacity:.45}
+.tr-prev .m{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--dim)}
+.tr-prev select{background:var(--card);border:1px solid var(--line);border-radius:7px;padding:5px 7px;
+  color:var(--paper);font-size:11.5px;outline:none;max-width:100%}
+.tr-prev select option{background:var(--panel);color:var(--paper)}
+
+/* ---- bandeja de lo importado sin proyecto ---- */
+.tr-bandeja{border:1px solid rgba(201,145,72,.35);border-radius:12px;overflow:hidden;margin-bottom:18px}
+.tr-bh{display:flex;align-items:center;gap:10px;padding:11px 14px;background:rgba(201,145,72,.07);
+  font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:var(--p2)}
+.tr-bh .n{margin-left:auto;font-size:12px;color:var(--paper)}
+.tr-br{display:grid;grid-template-columns:.85fr 1.3fr .8fr 1.3fr .7fr .8fr 1.1fr auto;gap:10px;align-items:center;
+  padding:10px 14px;border-top:1px solid var(--line);font-size:12.5px}
+.tr-br .m{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--dim);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tr-br select{background:var(--card);border:1px solid var(--line);border-radius:7px;padding:6px 8px;
+  color:var(--paper);font-size:12px;outline:none;max-width:100%}
+.tr-br select option{background:var(--panel);color:var(--paper)}
+@media(max-width:1100px){
+  .tr-prev{grid-template-columns:1fr 1fr;gap:6px}
+  .tr-br{grid-template-columns:1fr 1fr;gap:8px}
+  .tr-br>span:nth-child(4),.tr-br>span:nth-child(5){display:none}
+}
+
 </style>
 </head>
 <body>
@@ -1328,6 +1363,7 @@ function normalizeData(){
   if(!data.equipo) data.equipo=['Eduardo','Mathias Cristie','Osvaldo Fredes','Marco Riveros','Juan Ventura','Emilia Rojas'];
   if(!data.presupuestos) data.presupuestos=[];
   if(!data.revisores) data.revisores=[];
+  if(!data.tramBandeja) data.tramBandeja=[];
   // La libreta de revisores es una lista nueva: una versión anterior de la app
   // no la conoce y al sincronizar la borraría. Como cada trámite guarda una
   // copia de los datos de su revisor, aquí se vuelve a armar sola.
@@ -4716,7 +4752,7 @@ function adoptar(nuevo){
 /* ---- Descomponer el tablero en elementos y volver a armarlo --------- */
 const LISTAS_RAIZ = [
   ['presupuestos','pres'], ['inbox','buzon'], ['ingresosGenerales','ingG'],
-  ['gastosGenerales','gasG'], ['timeLog','hora'], ['revisores','revisor'],
+  ['gastosGenerales','gasG'], ['timeLog','hora'], ['revisores','revisor'], ['tramBandeja','trambz'],
 ];
 function claveEl(tipo, id){ return tipo + '/' + id; }
 function sinCampos(obj, quitar){ const o={}; for(const k in obj) if(!quitar.includes(k)) o[k]=obj[k]; return o; }
@@ -5219,9 +5255,11 @@ if(document.fonts && document.fonts.ready){
 
 const TRAM_TIPOS = [
   ['fact',    'Factibilidad'],
+  ['agua_alc','Agua potable y alcantarillado'],
   ['agua',    'Agua potable'],
   ['alc',     'Alcantarillado particular'],
   ['autoriz', 'Autorización de funcionamiento'],
+  ['otro',    'Otro trámite'],
 ];
 const TRAM_ESTADOS = [
   ['pendiente','Por ingresar'],
@@ -5358,9 +5396,11 @@ function renderTramitacion(root){
     clientes.forEach(c=>bar.append(chip(c, TR_FILTRO_CLI===c, ()=>{ TR_FILTRO_CLI=c; render(); })));
   }
   bar.append(el('div',{class:'tr-acc'},
+    el('button',{class:'tr-btn',onclick:()=>trImportarModal()},'⇧ Importar del portal'),
     el('button',{class:'tr-btn',onclick:()=>trNuevoTramite()},'＋ Nuevo trámite'),
     el('button',{class:'tr-btn pri',onclick:()=>trPdfElegir()},'⇩ PDF del lunes')));
   view.append(bar);
+  trBandeja(view);
 
   const pasa=t=>{
     if(TR_FILTRO_AUT!=='__todas' && (t.autTipo||'seremi')!==TR_FILTRO_AUT) return false;
@@ -5380,8 +5420,9 @@ function renderTramitacion(root){
       el('div',{class:'s',text:'Aquí va lo que cada proyecto pidió y ante quién: la factibilidad, el agua potable, '+
         'el alcantarillado particular y la autorización de funcionamiento. Con la fecha de ingreso, el revisor '+
         'asignado y las rondas de observaciones. Del lunes sale solo el PDF para mandar a cada estudio.'}),
-      el('div',{style:'margin-top:20px'},
-        el('button',{class:'tr-btn pri',onclick:()=>trNuevoTramite()},'＋ Anotar el primero'))));
+      el('div',{style:'margin-top:20px;display:flex;gap:8px;justify-content:center'},
+        el('button',{class:'tr-btn pri',onclick:()=>trImportarModal()},'⇧ Importar del portal'),
+        el('button',{class:'tr-btn',onclick:()=>trNuevoTramite()},'＋ Anotar uno a mano'))));
     root.append(view); return;
   }
   if(!grupos.length){
@@ -5559,6 +5600,15 @@ function trFicha(col, t){
         inputFecha(t.resolFecha, v=>t.resolFecha=v)));
     }
     campos.append(campo('A cargo en EMEP', inputTexto(t.aCargo, v=>t.aCargo=v, 'Marco Riveros'), 'w2'));
+    if(t.propietario || t.rut || t.valor!=null || t.estadoPortal){
+      campos.append(campo('Propietario', inputTexto(t.propietario, v=>t.propietario=v, ''), 'w2'));
+      campos.append(campo('RUT', inputTexto(t.rut, v=>t.rut=v, '')));
+      campos.append(campo('Arancel', el('div',{class:'ro',
+        text:t.valor!=null ? ('$'+Number(t.valor).toLocaleString('es-CL')) : '—'})));
+      campos.append(campo('Lo que dice el portal', el('div',{class:'ro',
+        text:[t.estadoPortal, t.pronunciamiento, t.firma?('firmado '+trFecha(t.firma)):''].filter(Boolean).join(' · ')||'—'}), 'w2'));
+      if(t.tipoPortal) campos.append(campo('Tipo en el portal', el('div',{class:'ro',text:t.tipoPortal}), 'w2'));
+    }
     caja.append(campos);
 
     const r=trRevisor(t.revisorId);
@@ -5942,6 +5992,302 @@ function trPdf(cliente, conRevisor, conCerrados){
   setTimeout(()=>{ try{ w.focus(); w.print(); }catch(e){} }, 700);
 }
 
+
+/* ====================================================================
+   IMPORTAR DESDE SEREMI EN LÍNEA
+   El portal no se puede conectar, pero exporta a Excel. Se copia y se
+   pega aquí: los trámites nuevos entran a una bandeja para que TÚ les
+   digas a qué proyecto corresponden, y los que ya tienes solo se
+   actualizan. La app no adivina el proyecto: lo sugiere por comuna y
+   tú aceptas o cambias.
+   ==================================================================== */
+
+/* ---- el parser vive aparte porque es una función pura: entra texto,
+        salen trámites, y se puede probar sin abrir la app ---- */
+function parsearSeremi(texto){
+  const salida = [];
+  if(texto == null) return salida;
+  const limpia = s => String(s==null?'':s).replace(/ /g,' ').trim();
+  const sinT = s => limpia(s).normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+  const vacio = s => { const v=limpia(s); return (!v || v==='---' || v==='-') ? '' : v; };
+
+  /* El arancel llega del Excel como "56.2": el punto es separador de
+     miles y el exportador se comió los ceros. Son 56.200 pesos. */
+  const plata = s => {
+    const v = vacio(s).replace(/\$/g,'').replace(/\s/g,'').replace(/,/g,'.');
+    if(!v) return null;
+    let m = v.match(/^(\d+)\.(\d{1,2})$/);
+    if(m) return Math.round(parseFloat(m[1]+'.'+m[2]) * 1000);
+    if(/^\d{1,3}(?:\.\d{3})+$/.test(v)) return parseInt(v.replace(/\./g,''),10);
+    if(/^\d+$/.test(v)) return parseInt(v,10);
+    return null;
+  };
+  /* "2026-09-16 10:39:56 16/09/2026 10:39": el portal pega dos formatos
+     en la misma celda. Nos quedamos con el de la izquierda. */
+  const fecha = s => {
+    const v = vacio(s); if(!v) return '';
+    let m = v.match(/(\d{4})-(\d{2})-(\d{2})/);
+    if(m) return m[1]+'-'+m[2]+'-'+m[3];
+    m = v.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    if(m) return m[3]+'-'+String(m[2]).padStart(2,'0')+'-'+String(m[1]).padStart(2,'0');
+    return '';
+  };
+  const partir = l => l.indexOf('\t')>=0 ? l.split('\t')
+                    : (l.split(';').length>=6 ? l.split(';') : l.split(/ {2,}/));
+  const CLAVES = [
+    ['tramite',['tramite','n tramite','numero de tramite','n de tramite']],
+    ['tipoProyecto',['tipo proyecto','tipo de proyecto']],
+    ['comuna',['comuna']],
+    ['rut',['rut']],
+    ['propietario',['nombre / razon social','nombre/razon social','nombre razon social','nombre']],
+    ['ingreso',['fecha ingreso','fecha de ingreso']],
+    ['valor',['valor','arancel','monto']],
+    ['estado',['estado']],
+    ['pronunciamiento',['pronunciamiento']],
+    ['firma',['fecha de firma','fecha firma']],
+  ];
+  let mapa = null;
+  for(const crudo of String(texto).split(/\r?\n/)){
+    if(!limpia(crudo)) continue;
+    const celdas = partir(crudo).map(limpia);
+    const enc = celdas.map(sinT);
+    if(enc.indexOf('tramite')>=0 && (enc.indexOf('estado')>=0 || enc.indexOf('comuna')>=0)){
+      mapa = {};
+      CLAVES.forEach(([campo,nombres])=>{
+        const i = enc.findIndex(h=>nombres.indexOf(h)>=0);
+        if(i>=0) mapa[campo]=i;
+      });
+      continue;
+    }
+    if(!mapa) continue;
+    const dame = c => mapa[c]==null ? '' : vacio(celdas[mapa[c]]);
+    const numero = dame('tramite').replace(/\D/g,'');
+    if(numero.length < 6) continue;
+    salida.push({ numero, tipoPortal:dame('tipoProyecto'), comuna:dame('comuna'), rut:dame('rut'),
+      propietario:dame('propietario'), ingreso:fecha(dame('ingreso')), valor:plata(dame('valor')),
+      estadoPortal:dame('estado'), pronunciamiento:dame('pronunciamiento'), firma:fecha(dame('firma')) });
+  }
+  return salida;
+}
+
+/* El portal nombra los proyectos a su manera. Lo que no reconozca queda
+   como "otro" y se muestra con el nombre literal del portal: no invento. */
+function tipoDesdePortal(txt){
+  const t = String(txt||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+  const agua=/agua\s+potable/.test(t), serv=/aguas?\s+servidas|alcantarillado/.test(t);
+  if(agua && serv) return 'agua_alc';
+  if(serv) return 'alc';
+  if(agua) return 'agua';
+  if(/factibilidad/.test(t)) return 'fact';
+  if(/autoriza|funcionamiento/.test(t)) return 'autoriz';
+  return 'otro';
+}
+/* El portal no dice "observado": eso aparece en Pronunciamiento. Lo que
+   no reconozco devuelve null y NO pisa el estado que pusiste a mano. */
+function estadoDesdePortal(estadoPortal, pronunciamiento){
+  const sinT = s => String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+  const e=sinT(estadoPortal), p=sinT(pronunciamiento);
+  if(/rechaz|deneg/.test(p)) return 'rechazado';
+  if(/aprob|aprueb|autoriz|favorable/.test(p)) return 'aprobado';
+  if(/observ|subsan/.test(p)) return 'observado';
+  if(/rechaz/.test(e)) return 'rechazado';
+  if(/aprob|aprueb|resuelto|firmad/.test(e)) return 'aprobado';
+  if(/observ/.test(e)) return 'observado';
+  if(/evaluacion|pagado|ingresad|tramite|revision/.test(e)) return 'revision';
+  return null;
+}
+
+const trNorm = s => String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().trim();
+
+/* Busca un trámite por su número del portal, esté donde esté. */
+function trPorNumero(num){
+  const n=String(num||'').replace(/\D/g,'');
+  if(!n) return null;
+  const enTablero = trTodos().find(({t})=>String(t.expediente||'').replace(/\D/g,'')===n);
+  if(enTablero) return { donde:'tablero', col:enTablero.col, t:enTablero.t };
+  const enBandeja = (data.tramBandeja||[]).find(t=>String(t.expediente||'').replace(/\D/g,'')===n);
+  if(enBandeja) return { donde:'bandeja', col:null, t:enBandeja };
+  return null;
+}
+
+/* Sugerencia de proyecto: por comuna, y solo si hay UNA sola que calce.
+   Si hay dudas no sugiere nada; prefiero que elijas tú. */
+function trSugerirProyecto(fila){
+  const c=trNorm(fila.comuna);
+  if(!c) return null;
+  const cands=[];
+  (data.areas||[]).forEach(a=>(a.columns||[]).forEach(col=>{
+    if(trNorm(col.comuna)===c) cands.push(col);
+  }));
+  return cands.length===1 ? cands[0] : null;
+}
+
+/* Qué va a pasar si importo esto. No cambia nada: solo mira. */
+function trPlanImportar(filas){
+  return filas.map(f=>{
+    const hay=trPorNumero(f.numero);
+    const nuevoEstado=estadoDesdePortal(f.estadoPortal, f.pronunciamiento);
+    if(!hay) return { f, accion:'nuevo', sugerido:trSugerirProyecto(f), nuevoEstado };
+    const cambios=[];
+    if(nuevoEstado && nuevoEstado!==hay.t.estado) cambios.push('estado → '+tramEstadoN(nuevoEstado));
+    if(f.estadoPortal && f.estadoPortal!==hay.t.estadoPortal) cambios.push('portal: '+f.estadoPortal);
+    if(f.pronunciamiento && f.pronunciamiento!==hay.t.pronunciamiento) cambios.push('pronunciamiento');
+    if(f.firma && f.firma!==hay.t.firma) cambios.push('fecha de firma');
+    return { f, accion: cambios.length?'actualiza':'igual', hay, cambios, nuevoEstado };
+  });
+}
+
+function trAplicarImportacion(plan){
+  if(!data.tramBandeja) data.tramBandeja=[];
+  let nuevos=0, tocados=0;
+  plan.forEach(p=>{
+    const f=p.f;
+    if(p.accion==='nuevo'){
+      const t={ id:uid(), tipo:tipoDesdePortal(f.tipoPortal), detalle:'', tipoPortal:f.tipoPortal,
+        autTipo:'seremi', autoridad:'SEREMI de Salud', oficina:f.comuna||'',
+        expediente:f.numero, ingreso:f.ingreso, estado:p.nuevoEstado||'revision',
+        revisorId:'', revisor:null, resol:'', resolFecha:f.firma||'',
+        comuna:f.comuna||'', propietario:f.propietario||'', rut:f.rut||'', valor:f.valor,
+        estadoPortal:f.estadoPortal, pronunciamiento:f.pronunciamiento, firma:f.firma,
+        aCargo:'', rondas:[], bitacora:[] };
+      trApunte(t,'estado','Importado del portal · '+(f.estadoPortal||'sin estado'));
+      const col=p.elegido || p.sugerido || null;
+      if(col){ if(!col.tram) col.tram=[]; col.tram.push(t); }
+      else data.tramBandeja.push(t);
+      nuevos++;
+    } else if(p.accion==='actualiza'){
+      const t=p.hay.t;
+      if(f.estadoPortal) t.estadoPortal=f.estadoPortal;
+      if(f.pronunciamiento) t.pronunciamiento=f.pronunciamiento;
+      if(f.firma){ t.firma=f.firma; if(!t.resolFecha) t.resolFecha=f.firma; }
+      if(f.valor!=null) t.valor=f.valor;
+      if(!t.ingreso && f.ingreso) t.ingreso=f.ingreso;
+      if(!t.tipoPortal) t.tipoPortal=f.tipoPortal;
+      if(!t.propietario && f.propietario) t.propietario=f.propietario;
+      if(!t.rut && f.rut) t.rut=f.rut;
+      if(p.nuevoEstado && p.nuevoEstado!==t.estado){
+        trApunte(t,'estado','El portal dice: '+(f.pronunciamiento||f.estadoPortal)+'.');
+        t.estado=p.nuevoEstado;
+      }
+      tocados++;
+    }
+  });
+  save(); render();
+  return { nuevos, tocados };
+}
+
+function trImportarModal(){
+  const ov=el('div',{class:'modal-ov',onmousedown:e=>{ if(e.target===ov) ov.remove(); }});
+  const ta=el('textarea',{rows:'7',class:'tr-pega',spellcheck:'false',
+    placeholder:'Pega aquí lo que copiaste del Excel…'});
+  const resumen=el('div',{class:'tr-resumen'});
+  const detalle=el('div',{class:'tr-previo'});
+  let plan=[];
+
+  const mirar=()=>{
+    const filas=parsearSeremi(ta.value);
+    plan=trPlanImportar(filas);
+    detalle.innerHTML='';
+    if(!filas.length){
+      resumen.textContent = ta.value.trim()
+        ? 'No reconocí ninguna fila. ¿Copiaste también la fila de títulos (Trámite, Tipo, comuna…)?'
+        : '';
+      btn.disabled=true; return;
+    }
+    const n=plan.filter(p=>p.accion==='nuevo').length;
+    const a=plan.filter(p=>p.accion==='actualiza').length;
+    const i=plan.filter(p=>p.accion==='igual').length;
+    resumen.textContent = 'Leí '+filas.length+' trámite'+(filas.length===1?'':'s')+': '+
+      n+' nuevo'+(n===1?'':'s')+' · '+a+' con cambios · '+i+' sin novedad.';
+    plan.forEach((p,idx)=>{
+      const f=p.f;
+      const fila=el('div',{class:'tr-prev'+(p.accion==='igual'?' gris':'')});
+      fila.append(el('span',{class:'m',text:f.numero}));
+      fila.append(el('span',{text:(f.tipoPortal||'—')+' · '+(f.comuna||'—')}));
+      fila.append(el('span',{class:'m',text:f.estadoPortal||'—'}));
+      if(p.accion==='nuevo'){
+        const sel=el('select',{onchange:e=>{
+          plan[idx].elegido = e.target.value ? trColPorId(e.target.value) : null; }});
+        sel.append(el('option',{value:'',text:'— dejar en la bandeja —'}));
+        (data.areas||[]).forEach(ar=>(ar.columns||[]).forEach(c=>
+          sel.append(el('option',{value:c.id,text:c.name}))));
+        if(p.sugerido){ sel.value=p.sugerido.id; plan[idx].elegido=p.sugerido; }
+        fila.append(sel);
+        fila.append(el('span',{class:'tr-p pendiente',text:p.sugerido?'sugerido':'nuevo'}));
+      } else {
+        fila.append(el('span',{class:'m',text:p.hay.col?p.hay.col.name:'en la bandeja'}));
+        fila.append(el('span',{class:'tr-p '+(p.accion==='igual'?'pendiente':'observado'),
+          text:p.accion==='igual'?'sin cambios':(p.cambios[0]||'actualiza')}));
+      }
+      detalle.append(fila);
+    });
+    btn.disabled = !(n+a);
+  };
+
+  const btn=el('button',{class:'tr-btn pri',disabled:'disabled',onclick:()=>{
+    const r=trAplicarImportacion(plan);
+    ov.remove();
+    alert('Listo: '+r.nuevos+' trámite(s) nuevo(s) y '+r.tocados+' actualizado(s).');
+  }},'Importar');
+
+  ta.addEventListener('input', mirar);
+  ta.addEventListener('paste', ()=>setTimeout(mirar,20));
+
+  ov.append(el('div',{class:'tr-modal'},
+    el('h4',{text:'Importar del portal'}),
+    el('div',{class:'sub',text:'seremi en línea · inbox proyectista'}),
+    el('div',{class:'tr-pasos'},
+      el('div',{text:'1 · En el portal, arriba a la izquierda: Exportar a EXCEL.'}),
+      el('div',{text:'2 · Abre el archivo, selecciona todo (Ctrl+E) y copia (Ctrl+C).'}),
+      el('div',{text:'3 · Pega aquí abajo. Antes de importar te muestro qué va a pasar.'})),
+    ta, resumen, detalle,
+    el('div',{class:'tr-add',style:'margin-top:16px;justify-content:flex-end'},
+      el('button',{class:'tr-btn',onclick:()=>ov.remove()},'Cancelar'), btn)));
+  document.body.append(ov);
+  setTimeout(()=>ta.focus(),40);
+}
+
+function trColPorId(id){
+  let out=null;
+  (data.areas||[]).forEach(a=>(a.columns||[]).forEach(c=>{ if(String(c.id)===String(id)) out=c; }));
+  return out;
+}
+
+/* ---- la bandeja: lo que llegó del portal y todavía no tiene proyecto ---- */
+function trBandeja(view){
+  const bz=(data.tramBandeja||[]);
+  if(!bz.length) return;
+  const caja=el('div',{class:'tr-bandeja'});
+  caja.append(el('div',{class:'tr-bh'},
+    el('span',{text:'Del portal, sin proyecto asignado'}),
+    el('span',{class:'n',text:String(bz.length)})));
+  bz.slice().forEach(t=>{
+    const sel=el('select',{});
+    sel.append(el('option',{value:'',text:'— elegir proyecto —'}));
+    (data.areas||[]).forEach(a=>(a.columns||[]).forEach(c=>
+      sel.append(el('option',{value:c.id,text:c.name}))));
+    const sug=trSugerirProyecto({comuna:t.comuna});
+    if(sug) sel.value=sug.id;
+    caja.append(el('div',{class:'tr-br'},
+      el('span',{class:'m',text:t.expediente}),
+      el('span',{text:(t.tipoPortal||tramNombre(t.tipo))}),
+      el('span',{class:'m',text:t.comuna||'—'}),
+      el('span',{class:'m',text:t.propietario||'—'}),
+      el('span',{class:'m',text:trFecha(t.ingreso)}),
+      el('span',{class:'tr-p '+t.estado,text:t.estadoPortal||tramEstadoN(t.estado)}),
+      sel,
+      el('button',{class:'tr-btn',onclick:()=>{
+        const col=trColPorId(sel.value);
+        if(!col){ alert('Elige a qué proyecto corresponde.'); return; }
+        if(!col.tram) col.tram=[];
+        col.tram.push(t);
+        if(!col.comuna && t.comuna) col.comuna=t.comuna;
+        data.tramBandeja=(data.tramBandeja||[]).filter(x=>x!==t);
+        save(); render();
+      }},'Asignar')));
+  });
+  view.append(caja);
+}
 
 // re-sync between tabs / windows
 window.addEventListener('storage',e=>{ if(e.key===KEY){ load(); render(); } });
