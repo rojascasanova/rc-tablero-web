@@ -18,7 +18,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-  window.RC_VERSION = '2.0.0';   // subir esto en cada versión nueva
+  window.RC_VERSION = '2.1.0';   // subir esto en cada versión nueva
   // Conexión a tu base de datos Supabase (tablero-rc)
   window.RC_SUPABASE_URL  = 'https://sdzybsyxyfbyrynhumig.supabase.co';
   window.RC_SUPABASE_ANON = 'sb_publishable_ycU09SDH1kMB5PqnfzkguQ_TIVFvmw-';
@@ -971,6 +971,147 @@ input,select,textarea{font-family:inherit}
   .ads-view{max-width:100%}
 }
 
+
+/* ====================================================================
+   TRAMITACIÓN — SEREMI, sanitarias, APR y municipio
+   ==================================================================== */
+.tr-view{padding:4px 34px 40px;max-width:1500px}
+.tr-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0 16px}
+.tr-f{font-size:12px;color:var(--dim);border:1px solid var(--line);border-radius:20px;padding:5px 11px;cursor:pointer}
+.tr-f:hover{border-color:var(--line-strong)}
+.tr-f.on{background:var(--panel);color:var(--paper);border-color:var(--line-strong)}
+.tr-et{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:1.2px;text-transform:uppercase;color:var(--faint);margin-right:2px}
+.tr-sep{width:1px;height:18px;background:var(--line);margin:0 3px}
+.tr-acc{display:flex;gap:8px;align-items:center;margin-left:auto}
+.tr-btn{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.4px;border:1px solid var(--line-strong);
+  border-radius:8px;padding:8px 13px;color:var(--dim)}
+.tr-btn:hover{color:var(--paper)}
+.tr-btn.pri{background:var(--paper);color:var(--bg);border-color:var(--paper);font-weight:500}
+
+.tr-tbl{border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.tr-h{display:grid;grid-template-columns:1.3fr 1.35fr .8fr .78fr .68fr .38fr .72fr .72fr 1fr;gap:10px;
+  padding:10px 14px;background:var(--panel)}
+.tr-h>span{font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:.9px;text-transform:uppercase;color:var(--faint)}
+.tr-g{display:flex;align-items:baseline;gap:10px;padding:13px 14px 8px;border-top:1px solid var(--line-strong);
+  background:rgba(232,228,216,.025)}
+.tr-g .gn{font-weight:500;font-size:14px}
+.tr-g .gs{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.8px;text-transform:uppercase;color:var(--faint)}
+.tr-g .gs.edit{cursor:text;border-bottom:1px dashed transparent;padding-bottom:1px}
+.tr-g .gs.edit:hover{border-bottom-color:var(--line-strong);color:var(--dim)}
+.tr-g .ga{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--faint);
+  border:1px solid var(--line);border-radius:5px;padding:3px 7px}
+.tr-g .ga:hover{color:var(--paper);border-color:var(--line-strong)}
+.tr-r{display:grid;grid-template-columns:1.3fr 1.35fr .8fr .78fr .68fr .38fr .72fr .72fr 1fr;gap:10px;
+  align-items:center;padding:10px 14px;border-top:1px solid var(--line);font-size:12.5px;cursor:pointer;text-align:left}
+.tr-r:hover{background:var(--card)}
+.tr-r.urge{box-shadow:inset 3px 0 0 var(--band-late)}
+.tr-r .tn{font-size:12.5px}
+.tr-r .tn small{display:block;color:var(--faint);font-size:10px;font-family:'IBM Plex Mono',monospace;margin-top:2px}
+.tr-r .m{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--dim);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tr-aut{line-height:1.35;min-width:0}
+.tr-aut .an{font-size:12.5px}
+.tr-aut .ar{display:block;color:var(--faint);font-size:10.5px;font-family:'IBM Plex Mono',monospace;margin-top:2px}
+.tr-tag{font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:.8px;text-transform:uppercase;
+  border-radius:4px;padding:1.5px 5px;border:1px solid;margin-right:6px;vertical-align:1px;white-space:nowrap}
+.tr-tag.seremi{color:#9fb3bd;border-color:rgba(109,138,156,.5)}
+.tr-tag.sanitaria{color:#b9a98c;border-color:rgba(201,145,72,.4)}
+.tr-tag.apr{color:#9db9a8;border-color:rgba(127,178,171,.4)}
+.tr-tag.muni{color:#9a9284;border-color:rgba(232,228,216,.2)}
+.tr-p{font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.5px;text-transform:uppercase;
+  border-radius:20px;padding:3.5px 8px;border:1px solid;white-space:nowrap;display:inline-block}
+.tr-p.pendiente{color:var(--faint);border-color:var(--line-strong)}
+.tr-p.revision{color:var(--p3);border-color:rgba(109,138,156,.45)}
+.tr-p.observado{color:var(--p2);border-color:rgba(201,145,72,.45)}
+.tr-p.aprobado{color:var(--today);border-color:rgba(127,178,171,.45)}
+.tr-p.rechazado{color:var(--p1);border-color:rgba(192,87,74,.45)}
+.tr-est{display:flex;flex-direction:column;gap:3px;align-items:flex-start}
+.tr-est .f{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--faint)}
+.tr-d{font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--paper)}
+.tr-d.alto{color:var(--band-late)}
+.tr-d.cerr{color:var(--faint)}
+.tr-ronda{color:var(--p2)}
+.tr-ronda sup{font-size:8.5px;margin-left:1px}
+.tr-vacio{border:1px dashed var(--line-strong);border-radius:12px;padding:40px 26px;text-align:center}
+.tr-vacio .ic{font-size:26px;color:var(--faint)}
+.tr-vacio .t{font-size:15px;margin-top:10px}
+.tr-vacio .s{color:var(--dim);font-size:13px;margin-top:8px;line-height:1.6;max-width:56ch;margin-left:auto;margin-right:auto}
+
+/* ficha del trámite */
+.tr-modal{background:var(--panel);border:1px solid var(--line-strong);border-radius:14px;width:min(820px,100%);
+  max-height:88vh;overflow:auto;padding:22px 24px 24px}
+.tr-modal h4{font-family:'Fraunces',Georgia,serif;font-weight:500;font-size:22px;letter-spacing:-.3px}
+.tr-modal .sub{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--dim);margin-top:5px}
+.tr-campos{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:18px 0 6px}
+.tr-c{background:var(--card);border:1px solid var(--line);border-radius:9px;padding:8px 10px;min-width:0}
+.tr-c.w2{grid-column:span 2}
+.tr-c label{display:block;font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:1px;
+  text-transform:uppercase;color:var(--faint);margin-bottom:5px}
+.tr-c input,.tr-c select{width:100%;background:none;border:none;color:var(--paper);font-size:12.5px;outline:none}
+.tr-c select option{background:var(--panel);color:var(--paper)}
+.tr-c input::placeholder,.tr-rd textarea::placeholder,.rv-nota textarea::placeholder{color:var(--faint);opacity:1}
+.tr-c .ro{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--dim)}
+.tr-sub{font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:1.3px;text-transform:uppercase;
+  color:var(--faint);margin:20px 0 10px;display:flex;align-items:center;gap:10px}
+.tr-sub:after{content:'';flex:1;height:1px;background:var(--line)}
+.tr-rondas{border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.tr-rd{display:grid;grid-template-columns:46px 1fr 96px 96px 54px 26px;gap:10px;padding:9px 12px;
+  border-top:1px solid var(--line);font-size:12px;align-items:start}
+.tr-rd:first-child{border-top:none;background:var(--card)}
+.tr-rd.h{font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:1px;text-transform:uppercase;color:var(--faint)}
+.tr-rd .m{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--dim)}
+.tr-rd .txt{line-height:1.5;white-space:pre-wrap}
+.tr-rd .pend{color:var(--band-late)}
+.tr-rd input,.tr-rd textarea{width:100%;background:none;border:none;color:var(--paper);font-size:12px;
+  outline:none;resize:vertical;font-family:inherit;line-height:1.5}
+.tr-rd .m input{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--dim)}
+.tr-x{color:var(--faint);font-size:13px;line-height:1}
+.tr-x:hover{color:var(--p1)}
+.tr-add{display:flex;gap:10px;margin-top:12px;align-items:center;flex-wrap:wrap}
+.tr-mov{display:grid;grid-template-columns:84px 1fr;gap:12px;padding:9px 0;border-top:1px solid var(--line);align-items:start}
+.tr-mov:first-child{border-top:none}
+.tr-mov .f{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--dim)}
+.tr-mov .t{font-size:12.5px;line-height:1.55;white-space:pre-wrap}
+.tr-mov .t small{display:block;color:var(--faint);font-size:10.5px;margin-top:3px;font-family:'IBM Plex Mono',monospace}
+.tr-otros{margin-top:6px;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.tr-otros .ot{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:center;padding:9px 12px;
+  border-top:1px solid var(--line);font-size:12px;cursor:pointer}
+.tr-otros .ot:first-child{border-top:none}
+.tr-otros .ot:hover{background:var(--card)}
+
+/* libreta de revisores */
+.rv-h,.rv-r{display:grid;grid-template-columns:1.25fr 1.3fr 1.35fr .85fr .5fr .75fr 26px;gap:12px;
+  align-items:center;padding:12px 14px;font-size:12.5px}
+.rv-h{background:var(--panel)}
+.rv-h>span{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.9px;text-transform:uppercase;color:var(--faint)}
+.rv-r{border-top:1px solid var(--line);cursor:pointer;text-align:left;width:100%}
+.rv-r:hover{background:var(--card)}
+.rv-r .rn{font-weight:500;font-size:13px}
+.rv-r .rc{display:block;color:var(--faint);font-size:10.5px;margin-top:2px}
+.rv-r .m{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--dim);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rv-nota{background:var(--card);border:1px solid var(--line);border-radius:9px;padding:10px 12px;margin-top:12px}
+.rv-nota label{display:block;font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:1px;
+  text-transform:uppercase;color:var(--faint);margin-bottom:6px}
+.rv-nota textarea{width:100%;background:none;border:none;color:var(--paper);font-size:12.5px;
+  outline:none;resize:vertical;font-family:inherit;line-height:1.6}
+
+@media(max-width:1100px){
+  .tr-view{padding:4px 16px 40px}
+  .tr-h{display:none}
+  .tr-r{grid-template-columns:1fr auto;gap:8px;padding:12px 12px}
+  .tr-r>span:nth-child(3),.tr-r>span:nth-child(4),.tr-r>span:nth-child(5),
+  .tr-r>span:nth-child(7),.tr-r>span:nth-child(8){display:none}
+  .tr-r .tr-aut{grid-column:1;font-size:11.5px}
+  .tr-campos{grid-template-columns:1fr 1fr}
+  .tr-c.w2{grid-column:span 2}
+  .tr-rd{grid-template-columns:34px 1fr 26px}
+  .tr-rd>span:nth-child(3),.tr-rd>span:nth-child(4),.tr-rd>span:nth-child(5){display:none}
+  .rv-h{display:none}
+  .rv-r{grid-template-columns:1fr auto;gap:8px}
+  .rv-r>span:nth-child(3),.rv-r>span:nth-child(4),.rv-r>span:nth-child(5),.rv-r>span:nth-child(6){display:none}
+}
+
 </style>
 </head>
 <body>
@@ -1015,6 +1156,15 @@ input,select,textarea{font-family:inherit}
       </button>
       <button class="nav-item" data-view="emitir" onclick="setView('emitir')">
         <span class="ico">✎</span> Emitir presupuesto
+      </button>
+    </div>
+    <div class="section-label">Tramitación</div>
+    <div class="nav">
+      <button class="nav-item" data-view="tramitacion" onclick="setView('tramitacion')">
+        <span class="ico">⎔</span> Trámites <span class="count" id="tramCount"></span>
+      </button>
+      <button class="nav-item" data-view="revisores" onclick="setView('revisores')">
+        <span class="ico">☏</span> Revisores <span class="count" id="revCount"></span>
       </button>
     </div>
     <div class="section-label">Proyectos <button title="Nuevo proyecto" onclick="addArea()">＋</button></div>
@@ -1177,6 +1327,11 @@ function normalizeData(){
   }));
   if(!data.equipo) data.equipo=['Eduardo','Mathias Cristie','Osvaldo Fredes','Marco Riveros','Juan Ventura','Emilia Rojas'];
   if(!data.presupuestos) data.presupuestos=[];
+  if(!data.revisores) data.revisores=[];
+  // La libreta de revisores es una lista nueva: una versión anterior de la app
+  // no la conoce y al sincronizar la borraría. Como cada trámite guarda una
+  // copia de los datos de su revisor, aquí se vuelve a armar sola.
+  try{ trRepararRevisores(); }catch(e){}
   if(!data.ingresosGenerales) data.ingresosGenerales=[];
   if(!data.gastosGenerales) data.gastosGenerales=[];
   ensurePersonal();
@@ -1503,6 +1658,10 @@ function renderSidebar(){
   const pending = t=>!t.done;
   document.getElementById('hoyCount').textContent = allTasks().filter(x=>x.t.due&&!x.t.done&&x.t.due<=todayStr()).length || '';
   document.getElementById('inboxCount').textContent = data.inbox.filter(pending).length || '';
+  const tc=document.getElementById('tramCount');
+  if(tc){ const ab=trTodos().filter(x=>TRAM_ABIERTOS.indexOf(x.t.estado)>=0).length; tc.textContent = ab || ''; }
+  const rc2=document.getElementById('revCount');
+  if(rc2){ const n=(data.revisores||[]).length; rc2.textContent = n || ''; }
   const pc=document.getElementById('presCount'); if(pc) pc.textContent = (data.presupuestos||[]).filter(p=>p.estado==='enviado').length || '';
   const ac=document.getElementById('archCount'); if(ac) ac.textContent = data.areas.reduce((s2,a)=>s2+a.columns.filter(c=>c.archived).length,0) || '';
   const adc=document.getElementById('adsCount');
@@ -1536,6 +1695,13 @@ function renderTop(){
   else if(data.ui.view==='archivados'){ const n=data.areas.reduce((s2,a)=>s2+a.columns.filter(c=>c.archived).length,0); t.textContent='Archivados'; s.textContent=n+' proyecto'+(n===1?'':'s')+' archivado'+(n===1?'':'s')+' · siguen contando en Finanzas'; }
   else if(data.ui.view==='presupuestos'){ t.textContent='Presupuestos'; s.textContent='embudo de cotizaciones · enviado → aprobado / caído'; }
   else if(data.ui.view==='emitir'){ t.textContent='Emitir presupuesto'; s.textContent='generador EMEP · UF del día automática'; }
+  else if(data.ui.view==='tramitacion'){
+    t.textContent='Tramitación';
+    const n=trTodos().length, pr=trProyectos().length;
+    s.textContent = n ? (n+' trámite'+(n===1?'':'s')+' en '+pr+' proyecto'+(pr===1?'':'s'))
+                      : 'seremi · sanitarias · apr · municipio';
+  }
+  else if(data.ui.view==='revisores'){ t.textContent='Revisores'; s.textContent='quién revisa qué, y cómo ubicarlo'; }
   else if(data.ui.view==='inbox'){ t.textContent='Bandeja de entrada'; s.textContent=data.inbox.filter(x=>!x.done).length+' pendientes'; }
   else{
     const a=curArea();
@@ -1598,6 +1764,8 @@ function renderMain(){
   // soltar ese pintador o quedaría escribiendo en nodos que ya no existen.
   if(data.ui.view!=='publicidad') ADS_PINTAR=null;
   if(data.ui.view==='hoy') return renderToday(root);
+  if(data.ui.view==='tramitacion') return renderTramitacion(root);
+  if(data.ui.view==='revisores') return renderRevisores(root);
   if(data.ui.view==='inbox') return renderInbox(root);
   if(data.ui.view==='equipo') return renderEquipo(root);
   if(data.ui.view==='finanzas') return renderFinanzas(root);
@@ -4308,12 +4476,38 @@ function cloudInit(){
   return SB;
 }
 
+/* Trae TODO lo que cambió después de `desde`, en tandas.
+   Antes se pedía de una sola vez, y la base tiene un tope de filas por
+   respuesta (mil por omisión). Con el tablero grande la respuesta llegaba
+   CORTADA: los elementos del final -- presupuestos, Marketing, la bandeja --
+   no llegaban nunca. El equipo los daba por desconocidos para la base y subía
+   SU copia vieja encima: por ahí volvió CASA D-L a Enviado. Ahora se pide por
+   tandas, avanzando por el número de cambio, hasta que la base no devuelva
+   nada más. Ningún tope la puede cortar. */
+const TANDA = 500;
 async function itemsLeer(desde){
-  const { data:filas, error } = await SB.from('tablero_items')
-    .select('clave,tipo,item_id,padre,orden,datos,borrado,rev,por_equipo')
-    .gt('rev', desde).order('rev',{ascending:true});
-  if(error) throw error;
-  return filas||[];
+  const todas=[]; let cursor=desde;
+  for(let vuelta=0; vuelta<400; vuelta++){
+    const { data:filas, error } = await SB.from('tablero_items')
+      .select('clave,tipo,item_id,padre,orden,datos,borrado,rev,por_equipo')
+      .gt('rev', cursor).order('rev',{ascending:true}).limit(TANDA);
+    if(error) throw error;
+    if(!filas || !filas.length) break;
+    todas.push(...filas);
+    cursor = filas[filas.length-1].rev;
+  }
+  return todas;
+}
+
+/* Cuántas filas tiene la tabla. Sirve para saber si una lectura completa
+   llegó completa de verdad, en vez de suponerlo. */
+async function itemsCuantas(){
+  try{
+    const { count, error } = await SB.from('tablero_items')
+      .select('clave',{count:'exact',head:true});
+    if(error) return null;
+    return typeof count==='number' ? count : null;
+  }catch(e){ return null; }
 }
 async function itemsEscribir(filas){
   for(let i=0;i<filas.length;i+=200){
@@ -4342,7 +4536,7 @@ async function traspasar(){
     const miPersonal=data.personal;
     APLICANDO_NUBE=true;
     try{
-      adoptar(armar(SNAP, data));
+      adoptar(armar(copiaMapa(SNAP), data));
       if(miPersonal) data.personal=miPersonal;
       normalizeData(); render();
     } finally { APLICANDO_NUBE=false; }
@@ -4383,8 +4577,18 @@ async function cloudLoad(){
       pend.subir = TABLERO_DE_EJEMPLO
         ? []                                                    // equipo nuevo: no aporta nada
         : pend.subir.filter(e => !SNAP.has(claveEl(e.tipo,e.id)));
-      apunte('entré sin foto propia: manda la base ('+filas.length+' elementos'
-             + (TABLERO_DE_EJEMPLO?', equipo nuevo':'') + ')');
+      // Y aporta algo SOLO si está seguro de haber leído la base entera. Si la
+      // lectura llegó corta, un elemento que sí existe allá parecería
+      // desconocido y su copia vieja lo pisaría. Ante la duda, no aporta nada.
+      const cuantas = await itemsCuantas();
+      if(cuantas != null && cuantas !== filas.length){
+        apunte('la lectura llegó corta ('+filas.length+' de '+cuantas+'): no aporto nada');
+        pend.subir.length = 0;
+      }
+      apunte('entré sin foto propia: manda la base ('+filas.length
+             + (cuantas!=null ? (' de '+cuantas) : '') + ' elementos'
+             + (TABLERO_DE_EJEMPLO?', equipo nuevo':'')
+             + ', aporto '+pend.subir.length+')');
     } else {
       apunte('entré: '+filas.length+' elemento(s) nuevos desde la base');
     }
@@ -4439,7 +4643,26 @@ function soloCompartido(d){
   const o={}; for(const k in d){ if(k!=='personal') o[k]=d[k]; } return o;
 }
 function copia(x){ try{ return JSON.parse(JSON.stringify(x)); }catch(e){ return null; } }
-function igual(a,b){ return JSON.stringify(a)===JSON.stringify(b); }
+/* ---- ¿Es el mismo dato? ---------------------------------------------
+   Postgres guarda jsonb con las claves REORDENADAS, así que un elemento que
+   vuelve de la base nunca viene escrito igual que salió, aunque el dato sea
+   idéntico. Comparando el texto crudo, cada equipo creía que TODO lo suyo
+   estaba cambiado: subía su versión encima de la del otro en cada revisión,
+   y el tablero quedaba en un empate donde cada equipo se veía la razón.
+   De ahí que CASA D-L volviera a Enviado, que Archivados marcara 11 en uno y
+   12 en el otro, y que el reel hubiera que escribirlo tres veces. Los abonos
+   se salvaban porque eran nuevos y no existían todavía en el otro equipo.
+   Se compara el contenido, no el orden en que está escrito. */
+function textoOrdenado(x){
+  if(x===undefined) return 'null';
+  if(Array.isArray(x)) return '['+x.map(textoOrdenado).join(',')+']';
+  if(x && typeof x==='object'){
+    return '{'+Object.keys(x).filter(k=>x[k]!==undefined).sort()
+      .map(k=>JSON.stringify(k)+':'+textoOrdenado(x[k])).join(',')+'}';
+  }
+  try{ const t=JSON.stringify(x); return t===undefined?'null':t; }catch(e){ return 'null'; }
+}
+function igual(a,b){ return textoOrdenado(a)===textoOrdenado(b); }
 
 /* La vista (qué pantalla miras, el zoom, el tema) es de cada equipo.
    El temporizador sí es compartido. */
@@ -4493,7 +4716,7 @@ function adoptar(nuevo){
 /* ---- Descomponer el tablero en elementos y volver a armarlo --------- */
 const LISTAS_RAIZ = [
   ['presupuestos','pres'], ['inbox','buzon'], ['ingresosGenerales','ingG'],
-  ['gastosGenerales','gasG'], ['timeLog','hora'],
+  ['gastosGenerales','gasG'], ['timeLog','hora'], ['revisores','revisor'],
 ];
 function claveEl(tipo, id){ return tipo + '/' + id; }
 function sinCampos(obj, quitar){ const o={}; for(const k in obj) if(!quitar.includes(k)) o[k]=obj[k]; return o; }
@@ -4975,6 +5198,750 @@ if(document.fonts && document.fonts.ready){
   document.fonts.ready.then(()=>{ if(_escribiendo()) return;
     if(data.ui.view==='board' && (data.ui.layout||'packed')==='packed') render(); });
 }
+
+/* ====================================================================
+   TRAMITACIÓN
+   Cada proyecto pide ante una autoridad los trámites que le tocan: la
+   factibilidad a la sanitaria o al APR, el agua potable y el
+   alcantarillado particular a la SEREMI de Salud, y al final la
+   autorización de funcionamiento. No todos los proyectos piden los
+   cuatro: la mayoría pide solo alcantarillado. Por eso aquí no hay
+   pasos fijos — cada proyecto muestra lo que de verdad pidió.
+
+   DÓNDE VIVE. Los trámites cuelgan de la sección del proyecto
+   (col.tram). Eso no es capricho: una sección ya viaja como un
+   elemento propio en la nube, y una versión más vieja de la app la
+   copia entera sin entenderla, así que los trámites le pasan por el
+   lado sin que pueda borrarlos. La libreta de revisores sí es una
+   lista aparte; si alguna vez se pierde, se rearma sola con los datos
+   que cada trámite guarda de su revisor.
+   ==================================================================== */
+
+const TRAM_TIPOS = [
+  ['fact',    'Factibilidad'],
+  ['agua',    'Agua potable'],
+  ['alc',     'Alcantarillado particular'],
+  ['autoriz', 'Autorización de funcionamiento'],
+];
+const TRAM_ESTADOS = [
+  ['pendiente','Por ingresar'],
+  ['revision', 'En revisión'],
+  ['observado','Observado'],
+  ['aprobado', 'Aprobado'],
+  ['rechazado','Rechazado'],
+];
+const AUT_TIPOS = [
+  ['seremi',   'SEREMI de Salud'],
+  ['sanitaria','Sanitaria'],
+  ['apr',      'APR o cooperativa'],
+  ['muni',     'Municipalidad'],
+];
+const TRAM_ABIERTOS = ['pendiente','revision','observado'];
+
+const tramNombre   = t => (TRAM_TIPOS.find(x=>x[0]===t)||[,'—'])[1];
+const tramEstadoN  = e => (TRAM_ESTADOS.find(x=>x[0]===e)||[,'—'])[1];
+const autTipoN     = a => (AUT_TIPOS.find(x=>x[0]===a)||[,''])[1];
+
+let TR_FILTRO_AUT = '__todas', TR_FILTRO_EST = '__todos', TR_FILTRO_CLI = '__todos';
+
+/* ---- fechas ---------------------------------------------------------
+   Todo se guarda como AAAA-MM-DD y se muestra como DD-MM-AAAA. */
+function trFecha(s){
+  if(!s) return '—';
+  const p=String(s).slice(0,10).split('-');
+  return p.length===3 ? p[2]+'-'+p[1]+'-'+p[0] : String(s);
+}
+function trFechaCorta(s){
+  if(!s) return '—';
+  const p=String(s).slice(0,10).split('-');
+  return p.length===3 ? p[2]+'-'+p[1] : String(s);
+}
+function trDiasEntre(a,b){
+  if(!a) return null;
+  const d1=new Date(a+'T00:00:00'), d2=b? new Date(b+'T00:00:00') : new Date();
+  if(isNaN(d1)||isNaN(d2)) return null;
+  return Math.max(0, Math.round((d2-d1)/86400000));
+}
+/* Los días corren mientras el trámite está abierto y se congelan al
+   cerrarse: así el número de un aprobado dice lo que tardó esa oficina. */
+function trDias(t){
+  if(!t.ingreso) return null;
+  const cerrado = t.estado==='aprobado' || t.estado==='rechazado';
+  return trDiasEntre(t.ingreso, cerrado ? (t.resolFecha||null) : null);
+}
+function trUltimaRonda(t){
+  const r=(t.rondas||[]);
+  return r.length ? r[r.length-1] : null;
+}
+/* Una ronda observada y sin responder es lo único que de verdad espera
+   por ti. De aquí salen la franja naranja y el contador de arriba. */
+function trSinResponder(t){
+  const r=trUltimaRonda(t);
+  if(!r || !r.fecha || r.resp) return null;
+  return trDiasEntre(r.fecha, null);
+}
+
+/* ---- recorrer todos los trámites del tablero ---- */
+function trTodos(){
+  const out=[];
+  (data.areas||[]).forEach(a=>(a.columns||[]).forEach(c=>{
+    (c.tram||[]).forEach(t=>out.push({area:a, col:c, t}));
+  }));
+  return out;
+}
+function trProyectos(){
+  const out=[];
+  (data.areas||[]).forEach(a=>(a.columns||[]).forEach(c=>{
+    if(c.tram && c.tram.length) out.push({area:a, col:c});
+  }));
+  return out;
+}
+function trClientes(){
+  const s=new Set();
+  trProyectos().forEach(({col})=>{ if(col.cliente) s.add(col.cliente); });
+  return [...s].sort((a,b)=>a.localeCompare(b,'es'));
+}
+
+/* ---- la libreta se rearma sola -------------------------------------
+   Si la lista de revisores se perdiera, cada trámite guarda una copia
+   de los datos de su revisor y con eso se vuelve a armar. */
+function trRepararRevisores(){
+  if(!data.revisores) data.revisores=[];
+  let cambio=false;
+  trTodos().forEach(({t})=>{
+    if(!t.revisorId || !t.revisor || !t.revisor.nombre) return;
+    if(data.revisores.some(r=>r.id===t.revisorId)) return;
+    data.revisores.push({ id:t.revisorId, nombre:t.revisor.nombre, cargo:t.revisor.cargo||'',
+      autTipo:t.autTipo||'seremi', autoridad:t.autoridad||'', oficina:t.oficina||'',
+      correo:t.revisor.correo||'', fono:t.revisor.fono||'', notas:'' });
+    cambio=true;
+  });
+  return cambio;
+}
+function trRevisor(id){ return (data.revisores||[]).find(r=>r.id===id)||null; }
+
+/* ==================== LA LISTA ==================== */
+function renderTramitacion(root){
+  trRepararRevisores();
+  const view=el('div',{class:'tr-view'});
+
+  const todos=trTodos();
+  const cuenta=e=>todos.filter(x=>x.t.estado===e).length;
+  const esperan=todos.filter(x=>trSinResponder(x.t)!=null).length;
+
+  const barra=el('div',{class:'platabar'},
+    el('span',{class:'chip'},'por ingresar ', el('b',{text:String(cuenta('pendiente'))})),
+    el('span',{class:'chip'},'en revisión ', el('b',{style:'color:var(--p3)',text:String(cuenta('revision'))})),
+    el('span',{class:'chip'},'observados ', el('b',{style:'color:var(--p2)',text:String(cuenta('observado'))})),
+    el('span',{class:'chip'},'aprobados ', el('b',{style:'color:var(--today)',text:String(cuenta('aprobado'))})),
+    el('span',{class:'chip'},'rechazados ', el('b',{style:'color:var(--p1)',text:String(cuenta('rechazado'))})));
+  if(esperan) barra.append(el('span',{class:'chip'},'esperan respuesta tuya ',
+    el('b',{style:'color:var(--band-late)',text:String(esperan)})));
+  view.append(barra);
+
+  /* --- filtros --- */
+  const bar=el('div',{class:'tr-bar'});
+  const chip=(txt,on,fn)=>el('button',{class:'tr-f'+(on?' on':''),onclick:fn},txt);
+  bar.append(el('span',{class:'tr-et',text:'Autoridad'}));
+  bar.append(chip('Todas', TR_FILTRO_AUT==='__todas', ()=>{ TR_FILTRO_AUT='__todas'; render(); }));
+  AUT_TIPOS.forEach(([k,n])=>bar.append(chip(n, TR_FILTRO_AUT===k, ()=>{ TR_FILTRO_AUT=k; render(); })));
+  bar.append(el('span',{class:'tr-sep'}));
+  bar.append(el('span',{class:'tr-et',text:'Estado'}));
+  bar.append(chip('Todos', TR_FILTRO_EST==='__todos', ()=>{ TR_FILTRO_EST='__todos'; render(); }));
+  bar.append(chip('Abiertos', TR_FILTRO_EST==='__abiertos', ()=>{ TR_FILTRO_EST='__abiertos'; render(); }));
+  bar.append(chip('Sin responder', TR_FILTRO_EST==='__pend', ()=>{ TR_FILTRO_EST='__pend'; render(); }));
+  const clientes=trClientes();
+  if(clientes.length){
+    bar.append(el('span',{class:'tr-sep'}));
+    bar.append(el('span',{class:'tr-et',text:'Estudio'}));
+    bar.append(chip('Todos', TR_FILTRO_CLI==='__todos', ()=>{ TR_FILTRO_CLI='__todos'; render(); }));
+    clientes.forEach(c=>bar.append(chip(c, TR_FILTRO_CLI===c, ()=>{ TR_FILTRO_CLI=c; render(); })));
+  }
+  bar.append(el('div',{class:'tr-acc'},
+    el('button',{class:'tr-btn',onclick:()=>trNuevoTramite()},'＋ Nuevo trámite'),
+    el('button',{class:'tr-btn pri',onclick:()=>trPdfElegir()},'⇩ PDF del lunes')));
+  view.append(bar);
+
+  const pasa=t=>{
+    if(TR_FILTRO_AUT!=='__todas' && (t.autTipo||'seremi')!==TR_FILTRO_AUT) return false;
+    if(TR_FILTRO_EST==='__abiertos' && TRAM_ABIERTOS.indexOf(t.estado)<0) return false;
+    if(TR_FILTRO_EST==='__pend' && trSinResponder(t)==null) return false;
+    return true;
+  };
+  const grupos=trProyectos()
+    .filter(({col})=>TR_FILTRO_CLI==='__todos' || col.cliente===TR_FILTRO_CLI)
+    .map(g=>({...g, lista:(g.col.tram||[]).filter(pasa)}))
+    .filter(g=>g.lista.length);
+
+  if(!todos.length){
+    view.append(el('div',{class:'tr-vacio'},
+      el('div',{class:'ic',text:'⎔'}),
+      el('div',{class:'t',text:'Todavía no hay trámites anotados'}),
+      el('div',{class:'s',text:'Aquí va lo que cada proyecto pidió y ante quién: la factibilidad, el agua potable, '+
+        'el alcantarillado particular y la autorización de funcionamiento. Con la fecha de ingreso, el revisor '+
+        'asignado y las rondas de observaciones. Del lunes sale solo el PDF para mandar a cada estudio.'}),
+      el('div',{style:'margin-top:20px'},
+        el('button',{class:'tr-btn pri',onclick:()=>trNuevoTramite()},'＋ Anotar el primero'))));
+    root.append(view); return;
+  }
+  if(!grupos.length){
+    view.append(el('div',{class:'tr-vacio'},
+      el('div',{class:'ic',text:'⌕'}),
+      el('div',{class:'t',text:'Nada con ese filtro'}),
+      el('div',{class:'s',text:'Prueba con “Todos” en estado, o quita el filtro de estudio.'})));
+    root.append(view); return;
+  }
+
+  const tbl=el('div',{class:'tr-tbl'});
+  tbl.append(el('div',{class:'tr-h'},
+    el('span',{text:'Trámite'}), el('span',{text:'Autoridad'}), el('span',{text:'Revisor'}),
+    el('span',{text:'N° ingreso'}), el('span',{text:'Ingresado'}), el('span',{text:'Días'}),
+    el('span',{text:'Observado'}), el('span',{text:'Respondido'}), el('span',{text:'Estado'})));
+
+  grupos.forEach(({area,col,lista})=>{
+    const cab=el('div',{class:'tr-g'},
+      el('span',{class:'gn',text:col.name}));
+    const sub=el('span',{class:'gs edit',contenteditable:'true',
+      title:'Estudio y comuna · clic para editar',
+      text:[col.cliente,col.comuna,area.name].filter(Boolean).join(' · ') || 'sin estudio · clic para escribirlo',
+      onblur:e=>{
+        const partes=e.target.textContent.split('·').map(x=>x.trim()).filter(Boolean);
+        col.cliente=partes[0]||''; col.comuna=partes[1]||'';
+        save(); render();
+      },
+      onkeydown:e=>{ if(e.key==='Enter'){ e.preventDefault(); e.target.blur(); } }});
+    cab.append(sub);
+    cab.append(el('button',{class:'ga',onclick:()=>trNuevoTramite(col)},'＋ trámite'));
+    tbl.append(cab);
+
+    const orden=TRAM_TIPOS.map(x=>x[0]);
+    lista.slice().sort((a,b)=>orden.indexOf(a.tipo)-orden.indexOf(b.tipo)).forEach(t=>{
+      const dias=trDias(t), sinResp=trSinResponder(t);
+      const ult=trUltimaRonda(t);
+      const nRondas=(t.rondas||[]).length;
+      const cerrado = t.estado==='aprobado'||t.estado==='rechazado';
+
+      const obsCell=el('span',{class:'m'});
+      if(ult && ult.fecha){
+        const s=el('span',{class:nRondas>1?'tr-ronda':'',text:trFechaCorta(ult.fecha)});
+        if(nRondas>1) s.append(el('sup',{text:nRondas+'ª'}));
+        obsCell.append(s);
+      } else obsCell.textContent='—';
+
+      const estado=el('span',{class:'tr-est'},
+        el('span',{class:'tr-p '+t.estado,text:tramEstadoN(t.estado)}));
+      if(t.resol||t.resolFecha)
+        estado.append(el('span',{class:'f',text:[t.resol?('res. '+t.resol):'', t.resolFecha?trFechaCorta(t.resolFecha):''].filter(Boolean).join(' · ')}));
+
+      const fila=el('button',{class:'tr-r'+(sinResp!=null?' urge':''),onclick:()=>trFicha(col,t)},
+        el('span',{class:'tn'}, tramNombre(t.tipo), t.detalle? el('small',{text:t.detalle}) : null),
+        el('span',{class:'tr-aut'},
+          el('span',{class:'an'},
+            el('span',{class:'tr-tag '+(t.autTipo||'seremi'),text:(t.autTipo==='sanitaria'?'sanitaria':t.autTipo==='apr'?'apr':t.autTipo==='muni'?'municipio':'seremi')}),
+            t.autoridad||'—'),
+          el('span',{class:'ar',text:t.oficina||''})),
+        el('span',{class:'m',text:(t.revisor&&t.revisor.nombre)||'—'}),
+        el('span',{class:'m',text:t.expediente||'—'}),
+        el('span',{class:'m',text:trFecha(t.ingreso)}),
+        el('span',{class:'tr-d'+(cerrado?' cerr':(dias!=null&&dias>60?' alto':'')),text:dias==null?'—':String(dias)}),
+        obsCell,
+        el('span',{class:'m',text:ult&&ult.resp? trFechaCorta(ult.resp) : (ult&&ult.fecha? '—':'—')}),
+        estado);
+      tbl.append(fila);
+    });
+  });
+  view.append(tbl);
+  root.append(view);
+}
+
+/* ==================== NUEVO TRÁMITE ==================== */
+function trNuevoTramite(colFijo){
+  const cols=[];
+  (data.areas||[]).forEach(a=>(a.columns||[]).forEach(c=>cols.push({a,c})));
+  if(!cols.length){ alert('Primero crea el proyecto en el tablero: el trámite se cuelga de él.'); return; }
+
+  const ov=el('div',{class:'modal-ov',onmousedown:e=>{ if(e.target===ov) ov.remove(); }});
+  const selProy=el('select',{class:'tr-in'});
+  cols.forEach(({a,c})=>selProy.append(el('option',{value:c.id,text:c.name+'  ·  '+a.name})));
+  if(colFijo) selProy.value=colFijo.id;
+  const selTipo=el('select',{class:'tr-in'});
+  TRAM_TIPOS.forEach(([k,n])=>selTipo.append(el('option',{value:k,text:n})));
+  selTipo.value='alc';
+
+  const caja=el('div',{class:'tr-modal',style:'width:min(520px,100%)'},
+    el('h4',{text:'Nuevo trámite'}),
+    el('div',{class:'sub',text:'lo demás se completa en la ficha'}),
+    el('div',{class:'tr-campos',style:'grid-template-columns:1fr'},
+      el('div',{class:'tr-c'}, el('label',{text:'Proyecto'}), selProy),
+      el('div',{class:'tr-c'}, el('label',{text:'Trámite'}), selTipo)),
+    el('div',{class:'tr-add'},
+      el('button',{class:'tr-btn',onclick:()=>ov.remove()},'Cancelar'),
+      el('button',{class:'tr-btn pri',onclick:()=>{
+        const par=cols.find(x=>String(x.c.id)===String(selProy.value));
+        if(!par) return;
+        if(!par.c.tram) par.c.tram=[];
+        const t={ id:uid(), tipo:selTipo.value, detalle:'', autTipo:'seremi', autoridad:'', oficina:'',
+                  expediente:'', ingreso:'', estado:'pendiente', revisorId:'', revisor:null,
+                  resol:'', resolFecha:'', aCargo:'', rondas:[], bitacora:[] };
+        par.c.tram.push(t);
+        ov.remove(); save(); render();
+        trFicha(par.c, t);
+      }},'Crear')));
+  ov.append(caja);
+  document.body.append(ov);
+}
+
+/* ==================== LA FICHA ==================== */
+function trFicha(col, t){
+  const ov=el('div',{class:'modal-ov',onmousedown:e=>{ if(e.target===ov){ ov.remove(); save(); render(); } }});
+  const caja=el('div',{class:'tr-modal'});
+  const repintar=()=>{ caja.innerHTML=''; pintar(); };
+
+  const campo=(lab,nodo,clase)=>el('div',{class:'tr-c'+(clase?' '+clase:'')}, el('label',{text:lab}), nodo);
+  const inputTexto=(val,fn,ph)=>el('input',{type:'text',value:val||'',placeholder:ph||'',
+    oninput:e=>{ fn(e.target.value); }, onblur:()=>{ save(); }});
+  const inputFecha=(val,fn)=>el('input',{type:'date',value:val||'',
+    onchange:e=>{ fn(e.target.value); save(); repintar(); }});
+
+  function pintar(){
+    caja.append(el('h4',{text:col.name+' · '+tramNombre(t.tipo)}));
+    caja.append(el('div',{class:'sub',
+      text:[col.cliente,col.comuna,t.expediente?('N° '+t.expediente):''].filter(Boolean).join(' · ')||'sin datos todavía'}));
+
+    /* --- campos --- */
+    const selTipo=el('select',{onchange:e=>{ t.tipo=e.target.value; save(); repintar(); }});
+    TRAM_TIPOS.forEach(([k,n])=>selTipo.append(el('option',{value:k,text:n,selected:t.tipo===k||undefined})));
+    selTipo.value=t.tipo;
+
+    const selAut=el('select',{onchange:e=>{ t.autTipo=e.target.value; save(); repintar(); }});
+    AUT_TIPOS.forEach(([k,n])=>selAut.append(el('option',{value:k,text:n})));
+    selAut.value=t.autTipo||'seremi';
+
+    const selEst=el('select',{onchange:e=>{
+      const antes=t.estado;
+      t.estado=e.target.value;
+      if((t.estado==='aprobado'||t.estado==='rechazado') && !t.resolFecha) t.resolFecha=todayStr();
+      if(antes!==t.estado) trApunte(t, 'estado', 'Pasó a '+tramEstadoN(t.estado)+'.');
+      save(); repintar(); }});
+    TRAM_ESTADOS.forEach(([k,n])=>selEst.append(el('option',{value:k,text:n})));
+    selEst.value=t.estado;
+
+    const selRev=el('select',{onchange:e=>{
+      if(e.target.value==='__nuevo'){ trNuevoRevisor(t, repintar); e.target.value=t.revisorId||''; return; }
+      t.revisorId=e.target.value;
+      const r=trRevisor(t.revisorId);
+      t.revisor = r ? {nombre:r.nombre, cargo:r.cargo||'', correo:r.correo||'', fono:r.fono||''} : null;
+      save(); repintar(); }});
+    selRev.append(el('option',{value:'',text:'— sin asignar —'}));
+    (data.revisores||[]).forEach(r=>selRev.append(el('option',{value:r.id,
+      text:r.nombre+(r.autoridad?('  ·  '+r.autoridad):'')})));
+    selRev.append(el('option',{value:'__nuevo',text:'＋ nuevo revisor…'}));
+    selRev.value=t.revisorId||'';
+
+    const dias=trDias(t);
+    const campos=el('div',{class:'tr-campos'},
+      campo('Trámite', selTipo),
+      campo('Tipo de autoridad', selAut),
+      campo('Autoridad', inputTexto(t.autoridad, v=>t.autoridad=v, 'Salud Araucanía / ESSAL / …')),
+      campo('Oficina', inputTexto(t.oficina, v=>t.oficina=v, 'Temuco')),
+
+      campo('Detalle', inputTexto(t.detalle, v=>t.detalle=v, 'fosa + drenes'), 'w2'),
+      campo('N° de ingreso', inputTexto(t.expediente, v=>t.expediente=v, '2615-S/26')),
+      campo('Ingresado', inputFecha(t.ingreso, v=>{ t.ingreso=v; if(t.estado==='pendiente'&&v) t.estado='revision'; })),
+
+      campo('Revisor asignado', selRev, 'w2'),
+      campo('Estado', selEst),
+      campo('Días', el('div',{class:'ro',text:dias==null?'—':String(dias)+(t.estado==='aprobado'||t.estado==='rechazado'?' (total)':'')})));
+
+    if(t.estado==='aprobado'||t.estado==='rechazado'){
+      campos.append(campo('N° de resolución', inputTexto(t.resol, v=>t.resol=v, '1.204')));
+      campos.append(campo(t.estado==='aprobado'?'Fecha de aprobación':'Fecha del rechazo',
+        inputFecha(t.resolFecha, v=>t.resolFecha=v)));
+    }
+    campos.append(campo('A cargo en EMEP', inputTexto(t.aCargo, v=>t.aCargo=v, 'Marco Riveros'), 'w2'));
+    caja.append(campos);
+
+    const r=trRevisor(t.revisorId);
+    if(r) caja.append(el('div',{class:'sub',style:'margin-top:10px',
+      text:[r.correo, r.fono].filter(Boolean).join('  ·  ')||'sin correo ni teléfono anotados'}));
+
+    /* --- rondas de observación --- */
+    caja.append(el('div',{class:'tr-sub',text:'Rondas de observación'}));
+    const rondas=el('div',{class:'tr-rondas'});
+    rondas.append(el('div',{class:'tr-rd h'},
+      el('span',{text:'Ronda'}), el('span',{text:'Qué observaron'}), el('span',{text:'Observado'}),
+      el('span',{text:'Respondido'}), el('span',{text:'Días'}), el('span')));
+    (t.rondas||[]).forEach((rd,i)=>{
+      const dResp = rd.resp ? trDiasEntre(rd.fecha, rd.resp) : trDiasEntre(rd.fecha, null);
+      const pend = !rd.resp;
+      const ta=el('textarea',{rows:'2',placeholder:'1 · …',
+        oninput:e=>{ rd.obs=e.target.value; }, onblur:()=>{ save(); }});
+      ta.value=rd.obs||'';
+      rondas.append(el('div',{class:'tr-rd'},
+        el('span',{class:'m',text:(i+1)+'ª'}),
+        el('span',{class:'txt'}, ta),
+        el('span',{class:'m'}, el('input',{type:'date',value:rd.fecha||'',
+          onchange:e=>{ rd.fecha=e.target.value; save(); repintar(); }})),
+        el('span',{class:'m'+(pend?' pend':'')}, el('input',{type:'date',value:rd.resp||'',
+          onchange:e=>{ rd.resp=e.target.value;
+            if(rd.resp) trApunte(t,'respuesta','Respondida la ronda '+(i+1)+'.');
+            save(); repintar(); }})),
+        el('span',{class:'m'+(pend?' pend':''),text:dResp==null?'—':String(dResp)}),
+        el('button',{class:'tr-x',title:'Borrar esta ronda',onclick:()=>{
+          if(!confirm('¿Borrar la ronda '+(i+1)+'?')) return;
+          t.rondas.splice(i,1); save(); repintar(); }},'✕')));
+    });
+    if(!(t.rondas||[]).length)
+      rondas.append(el('div',{class:'tr-rd'}, el('span'), el('span',{class:'txt',style:'color:var(--faint)',
+        text:'Sin observaciones. Si la autoridad observa, agrégala aquí.'}), el('span'),el('span'),el('span'),el('span')));
+    caja.append(rondas);
+    caja.append(el('div',{class:'tr-add'},
+      el('button',{class:'tr-btn',onclick:()=>{
+        if(!t.rondas) t.rondas=[];
+        t.rondas.push({ id:uid(), obs:'', fecha:todayStr(), resp:'' });
+        if(t.estado==='revision') t.estado='observado';
+        trApunte(t,'observacion','Llegó la ronda '+t.rondas.length+' de observaciones.');
+        save(); repintar();
+      }},'＋ Ronda de observaciones')));
+
+    /* --- bitácora --- */
+    caja.append(el('div',{class:'tr-sub',text:'Bitácora'}));
+    const bit=el('div');
+    (t.bitacora||[]).slice().reverse().forEach(m=>{
+      bit.append(el('div',{class:'tr-mov'},
+        el('span',{class:'f',text:trFecha(m.fecha)}),
+        el('span',{class:'t'}, m.texto, m.quien? el('small',{text:m.quien}) : null)));
+    });
+    if(!(t.bitacora||[]).length)
+      bit.append(el('div',{class:'tr-mov'}, el('span',{class:'f',text:'—'}),
+        el('span',{class:'t',style:'color:var(--faint)',text:'Todavía no hay anotaciones.'})));
+    caja.append(bit);
+    const inp=el('input',{type:'text',class:'tr-in',placeholder:'Escribe qué pasó y presiona Enter…',
+      style:'flex:1;min-width:200px;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:9px 11px;color:var(--paper);outline:none',
+      onkeydown:e=>{ if(e.key==='Enter' && e.target.value.trim()){
+        trApunte(t,'gestion',e.target.value.trim()); e.target.value=''; save(); repintar(); } }});
+    caja.append(el('div',{class:'tr-add'}, inp));
+
+    /* --- los otros trámites del proyecto --- */
+    const otros=(col.tram||[]).filter(x=>x!==t);
+    if(otros.length){
+      caja.append(el('div',{class:'tr-sub',text:'Los otros trámites de '+col.name}));
+      const box=el('div',{class:'tr-otros'});
+      otros.forEach(o=>box.append(el('div',{class:'ot',onclick:()=>{ ov.remove(); trFicha(col,o); }},
+        el('span',{text:tramNombre(o.tipo)+(o.autoridad?('  ·  '+o.autoridad):'')}),
+        el('span'), el('span',{class:'tr-p '+o.estado,text:tramEstadoN(o.estado)}))));
+      caja.append(box);
+    }
+
+    /* --- pie --- */
+    caja.append(el('div',{class:'tr-add',style:'margin-top:18px;justify-content:space-between'},
+      el('button',{class:'tr-btn',style:'border-color:rgba(192,87,74,.4);color:var(--p1)',onclick:()=>{
+        if(!confirm('¿Borrar el trámite "'+tramNombre(t.tipo)+'" de '+col.name+'?')) return;
+        col.tram=(col.tram||[]).filter(x=>x!==t);
+        ov.remove(); save(); render();
+      }},'✕ Borrar trámite'),
+      el('button',{class:'tr-btn pri',onclick:()=>{ ov.remove(); save(); render(); }},'Listo')));
+  }
+  pintar();
+  ov.append(caja);
+  document.body.append(ov);
+}
+
+function trApunte(t, tipo, texto){
+  if(!t.bitacora) t.bitacora=[];
+  t.bitacora.push({ id:uid(), fecha:todayStr(), tipo, texto,
+    quien:(data.equipo&&data.equipo[0])||'' });
+  while(t.bitacora.length>200) t.bitacora.shift();
+}
+
+/* ==================== LIBRETA DE REVISORES ==================== */
+function trNuevoRevisor(tram, luego){
+  const r={ id:uid(), nombre:'', cargo:'', autTipo:(tram&&tram.autTipo)||'seremi',
+            autoridad:(tram&&tram.autoridad)||'', oficina:(tram&&tram.oficina)||'',
+            correo:'', fono:'', notas:'' };
+  if(!data.revisores) data.revisores=[];
+  data.revisores.push(r);
+  trFichaRevisor(r, ()=>{
+    if(!r.nombre.trim()){ data.revisores=data.revisores.filter(x=>x!==r); }
+    else if(tram){
+      tram.revisorId=r.id;
+      tram.revisor={nombre:r.nombre, cargo:r.cargo||'', correo:r.correo||'', fono:r.fono||''};
+    }
+    save();
+    if(luego) luego(); else render();
+  });
+}
+
+function trFichaRevisor(r, alCerrar){
+  const ov=el('div',{class:'modal-ov',onmousedown:e=>{ if(e.target===ov) cerrar(); }});
+  const cerrar=()=>{ ov.remove(); save(); if(alCerrar) alCerrar(); else render(); };
+  const campo=(lab,nodo,clase)=>el('div',{class:'tr-c'+(clase?' '+clase:'')}, el('label',{text:lab}), nodo);
+  const txt=(val,fn,ph)=>el('input',{type:'text',value:val||'',placeholder:ph||'',
+    oninput:e=>fn(e.target.value), onblur:()=>save()});
+
+  const selAut=el('select',{onchange:e=>{ r.autTipo=e.target.value; save(); }});
+  AUT_TIPOS.forEach(([k,n])=>selAut.append(el('option',{value:k,text:n})));
+  selAut.value=r.autTipo||'seremi';
+
+  const notas=el('textarea',{rows:'3',placeholder:'Atiende de 9 a 13. Pide siempre la memoria firmada…',
+    oninput:e=>r.notas=e.target.value, onblur:()=>save()});
+  notas.value=r.notas||'';
+
+  const suyos=trTodos().filter(({t})=>t.revisorId===r.id);
+  const lista=el('div',{class:'tr-otros'});
+  if(suyos.length) suyos.forEach(({col,t})=>lista.append(el('div',{class:'ot',
+    onclick:()=>{ cerrar(); data.ui.view='tramitacion'; render(); trFicha(col,t); }},
+    el('span',{text:col.name+'  ·  '+tramNombre(t.tipo)}),
+    el('span',{class:'m',style:'font-family:\'IBM Plex Mono\',monospace;font-size:11px;color:var(--faint)',
+      text:trFecha(t.ingreso)}),
+    el('span',{class:'tr-p '+t.estado,text:tramEstadoN(t.estado)}))));
+  else lista.append(el('div',{class:'ot'},el('span',{style:'color:var(--faint)',text:'Todavía no tiene trámites tuyos.'}),el('span'),el('span')));
+
+  const caja=el('div',{class:'tr-modal',style:'width:min(620px,100%)'},
+    el('h4',{text:r.nombre||'Nuevo revisor'}),
+    el('div',{class:'sub',text:[autTipoN(r.autTipo), r.autoridad, r.oficina].filter(Boolean).join(' · ')||'—'}),
+    el('div',{class:'tr-campos'},
+      campo('Nombre', txt(r.nombre, v=>r.nombre=v, 'P. Guzmán'), 'w2'),
+      campo('Cargo', txt(r.cargo, v=>r.cargo=v, 'Ing. revisor'), 'w2'),
+      campo('Tipo de autoridad', selAut, 'w2'),
+      campo('Autoridad', txt(r.autoridad, v=>r.autoridad=v, 'Salud Araucanía'), 'w2'),
+      campo('Oficina', txt(r.oficina, v=>r.oficina=v, 'Temuco'), 'w2'),
+      campo('Correo', txt(r.correo, v=>r.correo=v, 'nombre@seremisalud.cl'), 'w2'),
+      campo('Teléfono', txt(r.fono, v=>r.fono=v, '+56 9 …'), 'w2'),
+      campo('Anexo / celular', txt(r.anexo, v=>r.anexo=v, 'anexo 214'), 'w2')),
+    el('div',{class:'rv-nota'}, el('label',{text:'Notas · cómo trabaja, qué pide siempre'}), notas),
+    el('div',{class:'tr-sub',text:'Trámites con esta persona'}), lista,
+    el('div',{class:'tr-add',style:'margin-top:18px;justify-content:space-between'},
+      el('button',{class:'tr-btn',style:'border-color:rgba(192,87,74,.4);color:var(--p1)',onclick:()=>{
+        if(suyos.length){ alert('Tiene '+suyos.length+' trámite(s) asignado(s). Cámbialos de revisor antes de borrarlo.'); return; }
+        if(!confirm('¿Borrar a '+(r.nombre||'este revisor')+' de la libreta?')) return;
+        data.revisores=(data.revisores||[]).filter(x=>x!==r);
+        cerrar();
+      }},'✕ Borrar'),
+      el('button',{class:'tr-btn pri',onclick:cerrar},'Listo')));
+  ov.append(caja);
+  document.body.append(ov);
+  setTimeout(()=>{ const i=caja.querySelector('input'); if(i && !r.nombre) i.focus(); },40);
+}
+
+function renderRevisores(root){
+  trRepararRevisores();
+  const view=el('div',{class:'tr-view'});
+  view.append(el('div',{class:'tr-bar'},
+    el('div',{class:'tr-acc',style:'margin-left:0'},
+      el('button',{class:'tr-btn pri',onclick:()=>trNuevoRevisor(null)},'＋ Nuevo revisor'))));
+
+  const revs=(data.revisores||[]).slice().sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||'','es'));
+  if(!revs.length){
+    view.append(el('div',{class:'tr-vacio'},
+      el('div',{class:'ic',text:'☏'}),
+      el('div',{class:'t',text:'La libreta está vacía'}),
+      el('div',{class:'s',text:'Aquí van los revisores de la SEREMI, de las sanitarias y de los APR: nombre, '+
+        'correo, teléfono y cómo trabaja cada uno. Después los eliges desde el trámite y no los vuelves a buscar.'}),
+      el('div',{style:'margin-top:20px'},
+        el('button',{class:'tr-btn pri',onclick:()=>trNuevoRevisor(null)},'＋ Anotar el primero'))));
+    root.append(view); return;
+  }
+
+  const tbl=el('div',{class:'tr-tbl'});
+  tbl.append(el('div',{class:'rv-h'},
+    el('span',{text:'Revisor'}), el('span',{text:'Autoridad'}), el('span',{text:'Correo'}),
+    el('span',{text:'Teléfono'}), el('span',{text:'Trámites'}), el('span',{text:'Último contacto'}), el('span')));
+  revs.forEach(r=>{
+    const suyos=trTodos().filter(({t})=>t.revisorId===r.id);
+    let ult='';
+    suyos.forEach(({t})=>{
+      (t.bitacora||[]).forEach(m=>{ if(!ult||m.fecha>ult) ult=m.fecha; });
+      (t.rondas||[]).forEach(rd=>{ if(rd.fecha&&(!ult||rd.fecha>ult)) ult=rd.fecha;
+                                   if(rd.resp&&(!ult||rd.resp>ult)) ult=rd.resp; });
+    });
+    tbl.append(el('button',{class:'rv-r',onclick:()=>trFichaRevisor(r)},
+      el('span',{}, el('span',{class:'rn',text:r.nombre||'(sin nombre)'}),
+                    el('span',{class:'rc',text:r.cargo||''})),
+      el('span',{class:'tr-aut'},
+        el('span',{class:'an'},
+          el('span',{class:'tr-tag '+(r.autTipo||'seremi'),
+            text:(r.autTipo==='sanitaria'?'sanitaria':r.autTipo==='apr'?'apr':r.autTipo==='muni'?'municipio':'seremi')}),
+          r.autoridad||'—'),
+        el('span',{class:'ar',text:r.oficina||''})),
+      el('span',{class:'m',text:r.correo||'—'}),
+      el('span',{class:'m',text:r.fono||'—'}),
+      el('span',{class:'m',style:'color:var(--paper)',text:String(suyos.length)}),
+      el('span',{class:'m',text:ult?trFecha(ult):'—'}),
+      el('span',{class:'m',text:'›'})));
+  });
+  view.append(tbl);
+  root.append(view);
+}
+
+/* ==================== EL PDF DEL LUNES ==================== */
+function trPdfElegir(){
+  const clientes=trClientes();
+  const ov=el('div',{class:'modal-ov',onmousedown:e=>{ if(e.target===ov) ov.remove(); }});
+  const sel=el('select',{});
+  sel.append(el('option',{value:'__todos',text:'Todos los proyectos (para ti)'}));
+  clientes.forEach(c=>sel.append(el('option',{value:c,text:c})));
+  const chk=el('input',{type:'checkbox'});
+  const chk2=el('input',{type:'checkbox',checked:'checked'});
+  const caja=el('div',{class:'tr-modal',style:'width:min(520px,100%)'},
+    el('h4',{text:'PDF del lunes'}),
+    el('div',{class:'sub',text:'se abre el diálogo de impresión · elige “Guardar como PDF”'}),
+    el('div',{class:'tr-campos',style:'grid-template-columns:1fr;margin-bottom:0'},
+      el('div',{class:'tr-c'}, el('label',{text:'Para qué estudio'}), sel)),
+    el('div',{class:'tr-add',style:'margin-top:10px'},
+      el('label',{style:'display:flex;gap:8px;align-items:center;font-size:12.5px;color:var(--dim)'},
+        chk, 'incluir el revisor asignado'),
+      el('label',{style:'display:flex;gap:8px;align-items:center;font-size:12.5px;color:var(--dim)'},
+        chk2, 'incluir los cerrados')),
+    el('div',{class:'tr-add',style:'margin-top:18px;justify-content:flex-end'},
+      el('button',{class:'tr-btn',onclick:()=>ov.remove()},'Cancelar'),
+      el('button',{class:'tr-btn pri',onclick:()=>{
+        const cli=sel.value, rev=chk.checked, cerr=chk2.checked;
+        ov.remove(); trPdf(cli, rev, cerr);
+      }},'⇩ Generar')));
+  ov.append(caja);
+  document.body.append(ov);
+}
+
+function trPdfSemana(){
+  const hoy=new Date();
+  const dia=(hoy.getDay()+6)%7;                 // 0 = lunes
+  const lun=new Date(hoy); lun.setDate(hoy.getDate()-dia);
+  const vie=new Date(lun);  vie.setDate(lun.getDate()+4);
+  const M=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  const mismoMes = lun.getMonth()===vie.getMonth();
+  return 'semana del '+lun.getDate()+(mismoMes?'':' de '+M[lun.getMonth()])+' al '+
+         vie.getDate()+' de '+M[vie.getMonth()]+' de '+vie.getFullYear();
+}
+
+function trPdf(cliente, conRevisor, conCerrados){
+  const esc = s => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const grupos = trProyectos()
+    .filter(({col})=>cliente==='__todos' || col.cliente===cliente)
+    .map(g=>({...g, lista:(g.col.tram||[]).filter(t=>conCerrados || TRAM_ABIERTOS.indexOf(t.estado)>=0)}))
+    .filter(g=>g.lista.length);
+
+  if(!grupos.length){ alert('No hay trámites que mostrar con esa selección.'); return; }
+
+  const todos=[].concat(...grupos.map(g=>g.lista));
+  const n = e => todos.filter(t=>t.estado===e).length;
+
+  const orden=TRAM_TIPOS.map(x=>x[0]);
+  let filas='';
+  grupos.forEach(({col,lista})=>{
+    filas += '<tr class="grp"><td class="pj" colspan="'+(conRevisor?8:7)+'">'+esc(col.name)+
+             (col.comuna? ' <small>· '+esc(col.comuna.toUpperCase())+'</small>':'')+'</td></tr>';
+    lista.slice().sort((a,b)=>orden.indexOf(a.tipo)-orden.indexOf(b.tipo)).forEach(t=>{
+      const d=trDias(t), ult=trUltimaRonda(t), nR=(t.rondas||[]).length;
+      const cls = t.estado==='aprobado'?'ok' : t.estado==='rechazado'?'no' : '';
+      const estTxt = tramEstadoN(t.estado) + ((t.estado==='aprobado'||t.estado==='rechazado')&&t.resolFecha
+                     ? ' '+trFechaCorta(t.resolFecha) : '');
+      filas += '<tr>'+
+        '<td class="ti">'+esc(tramNombre(t.tipo))+'</td>'+
+        '<td>'+esc([autTipoN(t.autTipo)==='SEREMI de Salud'?'SEREMI':'', t.autoridad].filter(Boolean).join(' '))+
+          (t.oficina? ' <span class="g">· '+esc(t.oficina)+'</span>':'')+'</td>'+
+        (conRevisor? '<td>'+esc((t.revisor&&t.revisor.nombre)||'—')+'</td>' : '')+
+        '<td class="mo">'+esc(t.expediente||'—')+'</td>'+
+        '<td class="mo">'+trFecha(t.ingreso)+'</td>'+
+        '<td class="mo">'+(d==null?'—':d)+'</td>'+
+        '<td class="mo">'+(ult&&ult.fecha? trFechaCorta(ult.fecha)+(nR>1?' ('+nR+'ª)':'') : '—')+'</td>'+
+        '<td class="mo">'+(ult&&ult.resp? trFechaCorta(ult.resp) : '—')+'</td>'+
+        '<td><span class="est '+cls+'">'+esc(estTxt)+'</span></td>'+
+      '</tr>';
+    });
+  });
+
+  let acciones='';
+  grupos.forEach(({col,lista})=>lista.forEach(t=>{
+    const sr=trSinResponder(t);
+    if(t.estado==='observado' && sr!=null){
+      const ult=trUltimaRonda(t);
+      acciones += '<div class="acc"><div class="p">'+esc(col.name)+
+        '<small>'+esc(t.autoridad||'')+(t.expediente?' · '+esc(t.expediente):'')+'</small></div>'+
+        '<div>'+esc(ult&&ult.obs? ult.obs : 'Observado y pendiente de respuesta.')+'</div>'+
+        '<div class="v">OBSERVADO<br>'+trFecha(ult&&ult.fecha)+'<br><span class="d">'+sr+' días</span></div></div>';
+    }
+    if(t.estado==='rechazado'){
+      acciones += '<div class="acc"><div class="p">'+esc(col.name)+
+        '<small>'+esc(t.autoridad||'')+(t.expediente?' · '+esc(t.expediente):'')+'</small></div>'+
+        '<div>'+esc('Rechazado. '+((trUltimaRonda(t)||{}).obs||'Hay que reingresar.'))+'</div>'+
+        '<div class="v">RECHAZADO<br>'+trFecha(t.resolFecha)+'</div></div>';
+    }
+  }));
+
+  const titulo='Estado de tramitación';
+  const bajada=(cliente==='__todos'?'Todos los proyectos':cliente)+' · '+trPdfSemana();
+  const cols = conRevisor
+    ? '<th style="width:17%">Trámite</th><th style="width:16%">Autoridad</th><th style="width:9%">Revisor</th><th style="width:10%">N° ingreso</th><th style="width:9%">Ingresado</th><th style="width:5%">Días</th><th style="width:8%">Observado</th><th style="width:8%">Respondido</th><th>Estado</th>'
+    : '<th style="width:20%">Trámite</th><th style="width:19%">Autoridad</th><th style="width:11%">N° ingreso</th><th style="width:10%">Ingresado</th><th style="width:5%">Días</th><th style="width:9%">Observado</th><th style="width:9%">Respondido</th><th>Estado</th>';
+
+  const html = '<!DOCTYPE html><html lang="es"><head><meta charset="utf-8">'+
+  '<title>'+esc('Tramitación EMEP - '+(cliente==='__todos'?'todos':cliente)+' - '+todayStr())+'</title>'+
+  '<link rel="preconnect" href="https://fonts.googleapis.com">'+
+  '<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">'+
+  '<style>'+
+  '@page{size:A4;margin:14mm 12mm}'+
+  '*{box-sizing:border-box;margin:0;padding:0}'+
+  'body{font-family:"IBM Plex Sans",system-ui,sans-serif;background:#F2F1EC;color:#0A0A0A;'+
+    '-webkit-print-color-adjust:exact;print-color-adjust:exact;padding:18px 22px}'+
+  '.hd{display:flex;align-items:flex-start;justify-content:space-between;padding-bottom:10px;border-bottom:.5px solid #B8B6B0}'+
+  '.hd .lg{font-family:"IBM Plex Sans";font-weight:500;font-size:15px;letter-spacing:.14em}'+
+  '.hd .mrk{font-family:"IBM Plex Mono",monospace;font-size:7.5px;letter-spacing:.14em;text-transform:uppercase;color:#7A7978;text-align:right;line-height:1.7}'+
+  'h1{font-weight:300;font-size:27px;letter-spacing:-.025em;margin-top:20px;line-height:1.1}'+
+  '.baj{font-family:"IBM Plex Mono",monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#3D3D3C;margin-top:9px}'+
+  '.sec{font-family:"IBM Plex Mono",monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:#3D3D3C;margin:20px 0 9px}'+
+  '.sec em{color:#D94A2B;font-style:normal}'+
+  '.nums{display:flex;gap:26px;border-top:.5px solid #D4D2CC;padding-top:12px}'+
+  '.num{min-width:88px}.num .n{font-weight:300;font-size:32px;line-height:1;letter-spacing:-.03em}'+
+  '.num .l{font-family:"IBM Plex Mono",monospace;font-size:7.5px;letter-spacing:.12em;text-transform:uppercase;color:#7A7978;margin-top:6px;line-height:1.5}'+
+  'table{width:100%;border-collapse:collapse;font-size:8.8px}'+
+  'th{font-family:"IBM Plex Mono",monospace;font-size:7px;letter-spacing:.11em;text-transform:uppercase;color:#7A7978;'+
+    'text-align:left;font-weight:400;padding:0 6px 6px 0;border-bottom:.5px solid #B8B6B0}'+
+  'td{padding:6px 6px 6px 0;border-bottom:.5px solid #D4D2CC;vertical-align:top;line-height:1.4}'+
+  'tr.grp td{border-bottom:none;padding-top:10px;padding-bottom:2px}'+
+  'td.pj{font-weight:500;font-size:9.4px}'+
+  'td.pj small{font-family:"IBM Plex Mono",monospace;font-size:7.5px;color:#7A7978;font-weight:400;letter-spacing:.06em}'+
+  'td.ti{padding-left:11px}td.mo{font-family:"IBM Plex Mono",monospace;font-size:8.3px;color:#3D3D3C}'+
+  '.g{color:#7A7978}'+
+  '.est{font-family:"IBM Plex Mono",monospace;font-size:7px;letter-spacing:.1em;text-transform:uppercase;'+
+    'border:.5px solid #B8B6B0;border-radius:10px;padding:2px 6px;white-space:nowrap;color:#3D3D3C;display:inline-block}'+
+  '.est.ok{border-color:#0A0A0A;color:#0A0A0A}.est.no{border-color:#D94A2B;color:#D94A2B}'+
+  '.acc{display:grid;grid-template-columns:118px 1fr 92px;gap:12px;padding:9px 0;border-bottom:.5px solid #D4D2CC;'+
+    'font-size:8.8px;line-height:1.5;page-break-inside:avoid}'+
+  '.acc .p{font-weight:500}'+
+  '.acc .p small{display:block;font-family:"IBM Plex Mono",monospace;font-size:7.3px;color:#7A7978;margin-top:2px}'+
+  '.acc .v{font-family:"IBM Plex Mono",monospace;font-size:7.8px;color:#3D3D3C;text-align:right}'+
+  '.acc .v .d{color:#D94A2B}'+
+  '.ft{margin-top:26px;padding-top:10px;border-top:.5px solid #B8B6B0;display:flex;justify-content:space-between;'+
+    'font-family:"IBM Plex Mono",monospace;font-size:7.5px;color:#7A7978}'+
+  '@media print{body{padding:0}.noprint{display:none}}'+
+  '.noprint{position:fixed;right:14px;top:12px;font-family:"IBM Plex Mono",monospace;font-size:11px;'+
+    'background:#0A0A0A;color:#F2F1EC;border:none;border-radius:7px;padding:9px 14px;cursor:pointer}'+
+  '</style></head><body>'+
+  '<button class="noprint" onclick="window.print()">⎙ Guardar como PDF</button>'+
+  '<div class="hd"><span class="lg">EMEP</span>'+
+    '<span class="mrk">EMEP · Engineering · Mechanical<br>Electrical · Plumbing</span></div>'+
+  '<h1>'+titulo+'</h1><div class="baj">'+esc(bajada)+'</div>'+
+  '<div class="sec">01 <em>—</em> Resumen</div>'+
+  '<div class="nums">'+
+    '<div class="num"><div class="n">'+n('revision')+'</div><div class="l">En revisión<br>en la autoridad</div></div>'+
+    '<div class="num"><div class="n">'+n('observado')+'</div><div class="l">Observados<br>por responder</div></div>'+
+    '<div class="num"><div class="n">'+n('aprobado')+'</div><div class="l">Aprobados<br>con resolución</div></div>'+
+    '<div class="num"><div class="n">'+n('rechazado')+'</div><div class="l">Rechazados<br>a reingresar</div></div>'+
+    '<div class="num"><div class="n">'+n('pendiente')+'</div><div class="l">Por ingresar<br>en preparación</div></div>'+
+  '</div>'+
+  '<div class="sec">02 <em>—</em> Trámite por trámite</div>'+
+  '<table><tr>'+cols+'</tr>'+filas+'</table>'+
+  (acciones? '<div class="sec">03 <em>—</em> Requiere acción</div>'+acciones : '')+
+  '<div class="ft"><span>emep.cl · hola@emep.cl · +56 9 4845 6729</span><span>'+trFecha(todayStr())+'</span></div>'+
+  '</body></html>';
+
+  const w=window.open('', '_blank');
+  if(!w){ alert('El navegador bloqueó la ventana. Permite las ventanas emergentes y vuelve a intentar.'); return; }
+  w.document.open(); w.document.write(html); w.document.close();
+  setTimeout(()=>{ try{ w.focus(); w.print(); }catch(e){} }, 700);
+}
+
 
 // re-sync between tabs / windows
 window.addEventListener('storage',e=>{ if(e.key===KEY){ load(); render(); } });
