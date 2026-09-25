@@ -18,7 +18,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-  window.RC_VERSION = '2.1.1';   // subir esto en cada versión nueva
+  window.RC_VERSION = '2.1.2';   // subir esto en cada versión nueva
   // Conexión a tu base de datos Supabase (tablero-rc)
   window.RC_SUPABASE_URL  = 'https://sdzybsyxyfbyrynhumig.supabase.co';
   window.RC_SUPABASE_ANON = 'sb_publishable_ycU09SDH1kMB5PqnfzkguQ_TIVFvmw-';
@@ -1146,6 +1146,23 @@ input,select,textarea{font-family:inherit}
   .tr-br{grid-template-columns:1fr 1fr;gap:8px}
   .tr-br>span:nth-child(4),.tr-br>span:nth-child(5){display:none}
 }
+
+/* ---- buscador de proyectos ---- */
+.tr-busca{position:relative;min-width:0}
+.tr-busca-in{width:100%;background:var(--card);border:1px solid var(--line);border-radius:7px;
+  padding:7px 9px;color:var(--paper);font-size:12.5px;outline:none}
+.tr-busca-in:focus{border-color:var(--line-strong)}
+.tr-busca-in::placeholder{color:var(--faint);opacity:1}
+.tr-busca-lista{position:fixed;display:none;z-index:300;background:var(--panel);
+  border:1px solid var(--line-strong);border-radius:9px;overflow:auto;max-height:280px;
+  box-shadow:0 14px 34px rgba(0,0,0,.5)}
+.tr-busca-op{padding:8px 11px;cursor:pointer;border-top:1px solid var(--line)}
+.tr-busca-op:first-child{border-top:none}
+.tr-busca-op.on,.tr-busca-op:hover{background:var(--card)}
+.tr-busca-op .n{display:block;font-size:12.5px}
+.tr-busca-op .d{display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--faint);margin-top:2px}
+.tr-busca-op.crear{color:var(--today)}
+.tr-busca-op.crear span{font-size:12.5px}
 
 </style>
 </head>
@@ -5502,9 +5519,8 @@ function trNuevoTramite(colFijo){
   if(!cols.length){ alert('Primero crea el proyecto en el tablero: el trámite se cuelga de él.'); return; }
 
   const ov=el('div',{class:'modal-ov',onmousedown:e=>{ if(e.target===ov) ov.remove(); }});
-  const selProy=el('select',{class:'tr-in'});
-  cols.forEach(({a,c})=>selProy.append(el('option',{value:c.id,text:c.name+'  ·  '+a.name})));
-  if(colFijo) selProy.value=colFijo.id;
+  const selProy=trBuscarProyecto({ valor:colFijo||null,
+    placeholder:'escribe el nombre o el número…' });
   const selTipo=el('select',{class:'tr-in'});
   TRAM_TIPOS.forEach(([k,n])=>selTipo.append(el('option',{value:k,text:n})));
   selTipo.value='alc';
@@ -5518,8 +5534,9 @@ function trNuevoTramite(colFijo){
     el('div',{class:'tr-add'},
       el('button',{class:'tr-btn',onclick:()=>ov.remove()},'Cancelar'),
       el('button',{class:'tr-btn pri',onclick:()=>{
-        const par=cols.find(x=>String(x.c.id)===String(selProy.value));
-        if(!par) return;
+        const col=selProy._elegido();
+        if(!col){ alert('Escribe el proyecto y elígelo de la lista.'); return; }
+        const par={c:col};
         if(!par.c.tram) par.c.tram=[];
         const t={ id:uid(), tipo:selTipo.value, detalle:'', autTipo:'seremi', autoridad:'', oficina:'',
                   expediente:'', ingreso:'', estado:'pendiente', revisorId:'', revisor:null,
@@ -6206,12 +6223,10 @@ function trImportarModal(){
       fila.append(el('span',{text:(f.tipoPortal||'—')+' · '+(f.comuna||'—')}));
       fila.append(el('span',{class:'m',text:f.estadoPortal||'—'}));
       if(p.accion==='nuevo'){
-        const sel=el('select',{onchange:e=>{
-          plan[idx].elegido = e.target.value ? trColPorId(e.target.value) : null; }});
-        sel.append(el('option',{value:'',text:'— dejar en la bandeja —'}));
-        (data.areas||[]).forEach(ar=>(ar.columns||[]).forEach(c=>
-          sel.append(el('option',{value:c.id,text:c.name}))));
-        if(p.sugerido){ sel.value=p.sugerido.id; plan[idx].elegido=p.sugerido; }
+        const sel=trBuscarProyecto({ valor:p.sugerido, comuna:f.comuna,
+          placeholder:'proyecto… (o déjalo en blanco)',
+          onElegir:col=>{ plan[idx].elegido=col; } });
+        if(p.sugerido) plan[idx].elegido=p.sugerido;
         fila.append(sel);
         fila.append(el('span',{class:'tr-p pendiente',text:p.sugerido?'sugerido':'nuevo'}));
       } else {
@@ -6262,12 +6277,9 @@ function trBandeja(view){
     el('span',{text:'Del portal, sin proyecto asignado'}),
     el('span',{class:'n',text:String(bz.length)})));
   bz.slice().forEach(t=>{
-    const sel=el('select',{});
-    sel.append(el('option',{value:'',text:'— elegir proyecto —'}));
-    (data.areas||[]).forEach(a=>(a.columns||[]).forEach(c=>
-      sel.append(el('option',{value:c.id,text:c.name}))));
     const sug=trSugerirProyecto({comuna:t.comuna});
-    if(sug) sel.value=sug.id;
+    const sel=trBuscarProyecto({ valor:sug, comuna:t.comuna,
+      placeholder:'escribe el nombre o el número…' });
     caja.append(el('div',{class:'tr-br'},
       el('span',{class:'m',text:t.expediente}),
       el('span',{text:(t.tipoPortal||tramNombre(t.tipo))}),
@@ -6277,8 +6289,8 @@ function trBandeja(view){
       el('span',{class:'tr-p '+t.estado,text:t.estadoPortal||tramEstadoN(t.estado)}),
       sel,
       el('button',{class:'tr-btn',onclick:()=>{
-        const col=trColPorId(sel.value);
-        if(!col){ alert('Elige a qué proyecto corresponde.'); return; }
+        const col=sel._elegido();
+        if(!col){ alert('Escribe el proyecto y elígelo de la lista. Si todavía no existe, la misma lista te ofrece crearlo.'); return; }
         if(!col.tram) col.tram=[];
         col.tram.push(t);
         if(!col.comuna && t.comuna) col.comuna=t.comuna;
@@ -6287,6 +6299,121 @@ function trBandeja(view){
       }},'Asignar')));
   });
   view.append(caja);
+}
+
+/* ====================================================================
+   BUSCADOR DE PROYECTOS
+   Con treinta secciones en el tablero, una lista desplegable obliga a
+   recorrerla entera. Aquí se escribe un pedazo — "2629", "alpina",
+   "puerto varas", "winteri" — y la lista se achica sola. Busca en el
+   nombre, en el estudio, en la comuna y en el área.
+   Y si lo que escribiste todavía no existe, ofrece crearlo ahí mismo:
+   es justo lo que pasa cuando llega del portal un trámite de un
+   proyecto que aún no está en el tablero.
+   ==================================================================== */
+function trTodasLasCols(){
+  const out=[];
+  (data.areas||[]).forEach(a=>(a.columns||[]).forEach(c=>out.push({a,c})));
+  return out;
+}
+
+/* Crea la sección en el área que corresponda y la devuelve. */
+function trCrearProyecto(nombre, comuna, cliente){
+  const area = (data.areas||[]).find(a=>a.name==='EMEP') || (data.areas||[])[0];
+  if(!area) return null;
+  const col={ id:uid(), name:nombre, archived:false, tasks:[],
+    comuna:comuna||'', cliente:cliente||'',
+    meta:{anticipo:null,revA:null,revB:null,rev0:null,team:{},
+          fin:{presupuesto:0,cobrado:0,pagosList:[],gastosList:[]}} };
+  area.columns.unshift(col);
+  return col;
+}
+
+function trBuscarProyecto(opts){
+  opts = opts || {};
+  const caja = el('div',{class:'tr-busca'});
+  const inp  = el('input',{type:'text',class:'tr-busca-in',
+    placeholder: opts.placeholder || 'escribe el nombre o el número…',
+    value: opts.valor ? opts.valor.name : ''});
+  const lista = el('div',{class:'tr-busca-lista'});
+  let elegido = opts.valor || null;
+  let marcado = 0, ops = [];
+
+  const elegir = (col, crear) => {
+    if(crear){
+      col = trCrearProyecto(inp.value.trim(), opts.comuna||'', opts.cliente||'');
+      if(!col) return;
+      save();
+    }
+    elegido = col;
+    inp.value = col ? col.name : '';
+    cerrar();
+    if(opts.onElegir) opts.onElegir(col);
+  };
+  const cerrar = () => { lista.style.display='none'; lista.innerHTML=''; };
+
+  const pintar = () => {
+    const q = trNorm(inp.value);
+    let res = trTodasLasCols();
+    if(q) res = res.filter(({a,c}) =>
+      trNorm([c.name, c.cliente, c.comuna, a.name].filter(Boolean).join(' ')).indexOf(q) >= 0);
+    /* lo que empieza con lo escrito va primero */
+    if(q) res.sort((x,y)=>{
+      const a1=trNorm(x.c.name).indexOf(q)===0?0:1, b1=trNorm(y.c.name).indexOf(q)===0?0:1;
+      return a1-b1;
+    });
+    ops = res.slice(0,8).map(({a,c})=>({col:c, area:a}));
+    const exacto = q && res.some(({c})=>trNorm(c.name)===q);
+    const puedeCrear = opts.crear!==false && inp.value.trim().length>2 && !exacto;
+    if(puedeCrear) ops.push({crear:true});
+
+    lista.innerHTML='';
+    if(!ops.length){ cerrar(); return; }
+    if(marcado>=ops.length) marcado=0;
+    ops.forEach((o,i)=>{
+      const fila = o.crear
+        ? el('div',{class:'tr-busca-op crear'+(i===marcado?' on':''),
+            onmousedown:e=>{ e.preventDefault(); elegir(null,true); }},
+            el('span',{text:'＋ Crear el proyecto «'+inp.value.trim()+'»'}))
+        : el('div',{class:'tr-busca-op'+(i===marcado?' on':''),
+            onmousedown:e=>{ e.preventDefault(); elegir(o.col); }},
+            el('span',{class:'n',text:o.col.name}),
+            el('span',{class:'d',text:[o.col.cliente,o.col.comuna,o.area.name].filter(Boolean).join(' · ')}));
+      lista.append(fila);
+    });
+    /* fuera de cualquier caja con scroll: si no, el modal lo corta */
+    const r = inp.getBoundingClientRect();
+    lista.style.display='block';
+    lista.style.left  = Math.round(r.left)+'px';
+    lista.style.top   = Math.round(r.bottom+4)+'px';
+    lista.style.width = Math.round(Math.max(r.width, 240))+'px';
+  };
+
+  inp.addEventListener('input', ()=>{ marcado=0; elegido=null; pintar(); });
+  inp.addEventListener('focus', pintar);
+  inp.addEventListener('blur', ()=>setTimeout(cerrar,120));
+  inp.addEventListener('keydown', e=>{
+    if(e.key==='ArrowDown'){ e.preventDefault(); marcado=Math.min(marcado+1, ops.length-1); pintar(); }
+    else if(e.key==='ArrowUp'){ e.preventDefault(); marcado=Math.max(marcado-1, 0); pintar(); }
+    else if(e.key==='Enter'){ e.preventDefault(); const o=ops[marcado]; if(o) elegir(o.col, o.crear); }
+    else if(e.key==='Escape'){ cerrar(); }
+  });
+
+  /* Las listas viven fuera de la caja para que ningún scroll las corte, así
+     que hay que recoger las que quedaron sueltas al redibujar. La barrida va
+     en el tic siguiente: la caja recién creada todavía se está armando en
+     memoria y aún no cuelga del documento. */
+  lista._dueno = inp;
+  setTimeout(()=>{
+    document.querySelectorAll('.tr-busca-lista').forEach(x=>{
+      if(!x._dueno || !document.body.contains(x._dueno)) x.remove();
+    });
+  }, 0);
+  caja.append(inp);
+  document.body.append(lista);
+  caja._elegido = ()=>elegido;
+  caja._input = inp;
+  return caja;
 }
 
 // re-sync between tabs / windows
