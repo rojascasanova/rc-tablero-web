@@ -18,7 +18,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-  window.RC_VERSION = '2.1.5';   // subir esto en cada versión nueva
+  window.RC_VERSION = '2.1.6';   // subir esto en cada versión nueva
   // Conexión a tu base de datos Supabase (tablero-rc)
   window.RC_SUPABASE_URL  = 'https://sdzybsyxyfbyrynhumig.supabase.co';
   window.RC_SUPABASE_ANON = 'sb_publishable_ycU09SDH1kMB5PqnfzkguQ_TIVFvmw-';
@@ -981,7 +981,10 @@ input,select,textarea{font-family:inherit}
 /* ====================================================================
    TRAMITACIÓN — SEREMI, sanitarias, APR y municipio
    ==================================================================== */
-.tr-view{padding:4px 34px 40px;max-width:1500px}
+/* Igual que las demás vistas: el contenedor de afuera no desplaza, así que
+   el que tiene que desplazarse es este. Sin esto, la lista se corta abajo
+   apenas hay más trámites de los que caben en la pantalla. */
+.tr-view{flex:1;min-height:0;overflow-y:auto;padding:4px 34px 40px;max-width:1500px}
 .tr-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0 16px}
 .tr-f{font-size:12px;color:var(--dim);border:1px solid var(--line);border-radius:20px;padding:5px 11px;cursor:pointer}
 .tr-f:hover{border-color:var(--line-strong)}
@@ -6122,7 +6125,10 @@ function parsearSeremi(texto){
    como "otro" y se muestra con el nombre literal del portal: no invento. */
 function tipoDesdePortal(txt){
   const t = String(txt||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
-  const agua=/agua\s+potable/.test(t), serv=/aguas?\s+servidas|alcantarillado/.test(t);
+  /* "PROYECTO DE AGUA POTABLE Y SERVIDAS" (asi lo escribe el comprobante)
+     es lo mismo que "AGUA POTABLE Y AGUAS SERVIDAS" (asi lo escribe la
+     bandeja). Basta con la palabra "servidas". */
+  const agua=/agua\s+potable/.test(t), serv=/servidas|alcantarillado/.test(t);
   if(agua && serv) return 'agua_alc';
   if(serv) return 'alc';
   if(agua) return 'agua';
@@ -6141,7 +6147,7 @@ function estadoDesdePortal(estadoPortal, pronunciamiento){
   if(/rechaz/.test(e)) return 'rechazado';
   if(/aprob|aprueb|resuelto|firmad/.test(e)) return 'aprobado';
   if(/observ/.test(e)) return 'observado';
-  if(/evaluacion|pagado|ingresad|tramite|revision/.test(e)) return 'revision';
+  if(/evaluacion|pagado|ingresad|tramite|revision|programad/.test(e)) return 'revision';
   return null;
 }
 
