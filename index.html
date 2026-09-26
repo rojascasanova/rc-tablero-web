@@ -18,7 +18,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-  window.RC_VERSION = '2.1.3';   // subir esto en cada versión nueva
+  window.RC_VERSION = '2.1.5';   // subir esto en cada versión nueva
   // Conexión a tu base de datos Supabase (tablero-rc)
   window.RC_SUPABASE_URL  = 'https://sdzybsyxyfbyrynhumig.supabase.co';
   window.RC_SUPABASE_ANON = 'sb_publishable_ycU09SDH1kMB5PqnfzkguQ_TIVFvmw-';
@@ -87,7 +87,7 @@ input,select,textarea{font-family:inherit}
 /* ---------- SIDEBAR ---------- */
 #sidebar{
   background:var(--sidebar);border-right:1px solid var(--line);
-  display:flex;flex-direction:column;padding:20px 0;overflow:hidden;
+  display:flex;flex-direction:column;padding:20px 0;overflow-y:auto;overflow-x:hidden;
 }
 .brand{display:flex;align-items:center;gap:10px;padding:0 20px 20px}
 .brand .rc{
@@ -118,7 +118,10 @@ input,select,textarea{font-family:inherit}
 }
 .section-label button{color:var(--faint);font-size:15px;line-height:1;padding:0 4px}
 .section-label button:hover{color:var(--paper)}
-.projects{overflow-y:auto;flex:1}
+/* La lista de proyectos se lleva el espacio que sobra, pero con un piso:
+   sin él, en una pantalla baja el resto del menú la comprime hasta cero y
+   los proyectos desaparecen aunque estén ahí. */
+.projects{overflow-y:auto;flex:1;min-height:96px}
 .proj-item{
   display:flex;align-items:center;gap:11px;width:100%;text-align:left;
   padding:7px 8px;border-radius:7px;font-size:13.5px;transition:background .12s;
@@ -875,6 +878,9 @@ input,select,textarea{font-family:inherit}
     transform:translateX(-100%);transition:transform .22s ease;
     box-shadow:0 0 40px rgba(0,0,0,.5);overflow-y:auto}
   body.nav-open #sidebar{transform:none}
+  /* En el cajón del teléfono no hay espacio que repartir: la lista va
+     completa y el que se desplaza es el menú entero. */
+  .projects{flex:none;overflow:visible;min-height:0}
   body.nav-open::after{content:'';position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:110}
   #navBtn{display:flex;align-items:center;justify-content:center;
     position:fixed;top:10px;left:10px;z-index:130;width:38px;height:38px;
@@ -5555,6 +5561,7 @@ function trNuevoTramite(colFijo){
 
 /* ==================== LA FICHA ==================== */
 function trFicha(col, t){
+  /* col cambia si mueves el trámite a otro proyecto, por eso no es constante */
   const ov=el('div',{class:'modal-ov',onmousedown:e=>{ if(e.target===ov){ ov.remove(); save(); render(); } }});
   const caja=el('div',{class:'tr-modal'});
   const repintar=()=>{ caja.innerHTML=''; pintar(); };
@@ -5703,6 +5710,26 @@ function trFicha(col, t){
         el('span'), el('span',{class:'tr-p '+o.estado,text:tramEstadoN(o.estado)}))));
       caja.append(box);
     }
+
+    /* --- cambiar de proyecto ---
+       Sin esto, un trámite mal asignado obliga a borrarlo y volver a
+       importarlo. Pasa seguido: el portal no dice a qué proyecto va. */
+    caja.append(el('div',{class:'tr-sub',text:'Proyecto'}));
+    const mover=trBuscarProyecto({ valor:col, comuna:t.comuna,
+      placeholder:'escribe el nombre o el número…',
+      onElegir:destino=>{
+        if(!destino || destino===col) return;
+        const antes=col.name;
+        col.tram=(col.tram||[]).filter(x=>x!==t);
+        if(!destino.tram) destino.tram=[];
+        destino.tram.push(t);
+        if(!destino.comuna && t.comuna) destino.comuna=t.comuna;
+        trApunte(t,'gestion','Movido de "'+antes+'" a "'+destino.name+'".');
+        col = destino;
+        save(); repintar();
+      }});
+    caja.append(el('div',{class:'tr-c',style:'margin-bottom:4px'},
+      el('label',{text:'Este trámite pertenece a'}), mover));
 
     /* --- pie --- */
     caja.append(el('div',{class:'tr-add',style:'margin-top:18px;justify-content:space-between'},
@@ -6133,14 +6160,29 @@ function trPorNumero(num){
 
 /* Sugerencia de proyecto: por comuna, y solo si hay UNA sola que calce.
    Si hay dudas no sugiere nada; prefiero que elijas tú. */
+/* Sugerir es una cosa y decidir es otra.
+   FUERTE: el mismo RUT de propietario ya aparece en un trámite de ese
+   proyecto. Eso es una coincidencia real y viene aceptada.
+   DÉBIL: solo calza la comuna. Eso NO identifica un proyecto — en Puerto
+   Varas puedes tener cinco — así que se muestra como pista y eliges tú.
+   Devuelve {col, fuerte} o null. */
 function trSugerirProyecto(fila){
+  const rut=String(fila.rut||'').replace(/[^0-9kK]/g,'').toLowerCase();
+  if(rut){
+    const porRut=[];
+    trTodos().forEach(({col,t})=>{
+      const r2=String(t.rut||'').replace(/[^0-9kK]/g,'').toLowerCase();
+      if(r2 && r2===rut && porRut.indexOf(col)<0) porRut.push(col);
+    });
+    if(porRut.length===1) return { col:porRut[0], fuerte:true };
+  }
   const c=trNorm(fila.comuna);
   if(!c) return null;
   const cands=[];
   (data.areas||[]).forEach(a=>(a.columns||[]).forEach(col=>{
     if(trNorm(col.comuna)===c) cands.push(col);
   }));
-  return cands.length===1 ? cands[0] : null;
+  return cands.length===1 ? { col:cands[0], fuerte:false } : null;
 }
 
 /* Qué va a pasar si importo esto. No cambia nada: solo mira. */
@@ -6148,7 +6190,10 @@ function trPlanImportar(filas){
   return filas.map(f=>{
     const hay=trPorNumero(f.numero);
     const nuevoEstado=estadoDesdePortal(f.estadoPortal, f.pronunciamiento);
-    if(!hay) return { f, accion:'nuevo', sugerido:trSugerirProyecto(f), nuevoEstado };
+    if(!hay){
+      const sug=trSugerirProyecto(f);
+      return { f, accion:'nuevo', sugerido:sug&&sug.col||null, fuerte:!!(sug&&sug.fuerte), nuevoEstado };
+    }
     const cambios=[];
     if(nuevoEstado && nuevoEstado!==hay.t.estado) cambios.push('estado → '+tramEstadoN(nuevoEstado));
     if(f.estadoPortal && f.estadoPortal!==hay.t.estadoPortal) cambios.push('portal: '+f.estadoPortal);
@@ -6172,7 +6217,9 @@ function trAplicarImportacion(plan){
         estadoPortal:f.estadoPortal, pronunciamiento:f.pronunciamiento, firma:f.firma,
         aCargo:'', rondas:[], bitacora:[] };
       trApunte(t,'estado','Importado del portal · '+(f.estadoPortal||'sin estado'));
-      const col=p.elegido || p.sugerido || null;
+      // Solo lo que TÚ dejaste elegido. Antes caía de vuelta en la sugerencia
+      // y por eso cuatro trámites de proyectos distintos terminaron en uno solo.
+      const col=p.elegido || null;
       if(col){ if(!col.tram) col.tram=[]; col.tram.push(t); }
       else data.tramBandeja.push(t);
       nuevos++;
@@ -6227,12 +6274,13 @@ function trImportarModal(){
       fila.append(el('span',{text:(f.tipoPortal||'—')+' · '+(f.comuna||'—')}));
       fila.append(el('span',{class:'m',text:f.estadoPortal||'—'}));
       if(p.accion==='nuevo'){
-        const sel=trBuscarProyecto({ valor:p.sugerido, comuna:f.comuna,
-          placeholder:'proyecto… (o déjalo en blanco)',
+        const sel=trBuscarProyecto({ valor:p.fuerte?p.sugerido:null, comuna:f.comuna,
+          placeholder: p.sugerido && !p.fuerte ? ('¿'+p.sugerido.name+'?') : 'proyecto… (o déjalo en blanco)',
           onElegir:col=>{ plan[idx].elegido=col; } });
-        if(p.sugerido) plan[idx].elegido=p.sugerido;
+        if(p.fuerte) plan[idx].elegido=p.sugerido; else plan[idx].elegido=null;
         fila.append(sel);
-        fila.append(el('span',{class:'tr-p pendiente',text:p.sugerido?'sugerido':'nuevo'}));
+        fila.append(el('span',{class:'tr-p '+(p.fuerte?'ok':'pendiente'),
+          text: p.fuerte ? 'mismo propietario' : (p.sugerido?'solo por comuna':'nuevo')}));
       } else {
         fila.append(el('span',{class:'m',text:p.hay.col?p.hay.col.name:'en la bandeja'}));
         fila.append(el('span',{class:'tr-p '+(p.accion==='igual'?'pendiente':'observado'),
@@ -6281,9 +6329,10 @@ function trBandeja(view){
     el('span',{text:'Del portal, sin proyecto asignado'}),
     el('span',{class:'n',text:String(bz.length)})));
   bz.slice().forEach(t=>{
-    const sug=trSugerirProyecto({comuna:t.comuna});
-    const sel=trBuscarProyecto({ valor:sug, comuna:t.comuna,
-      placeholder:'escribe el nombre o el número…' });
+    const sug=trSugerirProyecto({comuna:t.comuna, rut:t.rut});
+    const sel=trBuscarProyecto({ valor:(sug&&sug.fuerte)?sug.col:null, comuna:t.comuna,
+      placeholder:(sug&&!sug.fuerte)?('¿'+sug.col.name+'? · escribe el nombre o el número…')
+                                    :'escribe el nombre o el número…' });
     caja.append(el('div',{class:'tr-br'},
       el('span',{class:'m',text:t.expediente}),
       el('span',{text:(t.tipoPortal||tramNombre(t.tipo))}),
