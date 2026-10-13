@@ -18,7 +18,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-  window.RC_VERSION = '2.1.6';   // subir esto en cada versión nueva
+  window.RC_VERSION = '2.1.8';   // subir esto en cada versión nueva
   // Conexión a tu base de datos Supabase (tablero-rc)
   window.RC_SUPABASE_URL  = 'https://sdzybsyxyfbyrynhumig.supabase.co';
   window.RC_SUPABASE_ANON = 'sb_publishable_ycU09SDH1kMB5PqnfzkguQ_TIVFvmw-';
@@ -1018,6 +1018,10 @@ input,select,textarea{font-family:inherit}
 .tr-r>span{min-width:0}
 .tr-r .tn{font-size:12.5px;min-width:0}
 .tr-r .tn small{display:block;color:var(--faint);font-size:10px;font-family:'IBM Plex Mono',monospace;margin-top:2px}
+/* El numero de ingreso tiene su propia columna en el computador. En el
+   telefono esa columna se esconde, y justo ese es el dato que sirve para
+   cruzar con los correos de la SEREMI: ahi baja bajo el nombre. */
+.tr-r .tn small.exp{display:none}
 .tr-r .m{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--dim);
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tr-aut{line-height:1.35;min-width:0}
@@ -1114,6 +1118,7 @@ input,select,textarea{font-family:inherit}
   .tr-r{grid-template-columns:1fr auto;gap:8px;padding:12px 12px}
   .tr-r>span:nth-child(3),.tr-r>span:nth-child(4),.tr-r>span:nth-child(5),
   .tr-r>span:nth-child(7),.tr-r>span:nth-child(8){display:none}
+  .tr-r .tn small.exp{display:block;color:var(--dim)}
   .tr-r .tr-aut{grid-column:1;font-size:11.5px}
   .tr-campos{grid-template-columns:1fr 1fr}
   .tr-c.w2{grid-column:span 2}
@@ -1146,7 +1151,7 @@ input,select,textarea{font-family:inherit}
 .tr-bh{display:flex;align-items:center;gap:10px;padding:11px 14px;background:rgba(201,145,72,.07);
   font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:var(--p2)}
 .tr-bh .n{margin-left:auto;font-size:12px;color:var(--paper)}
-.tr-br{display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.3fr) minmax(0,.8fr) minmax(0,1.3fr) minmax(0,.7fr) minmax(0,.8fr) minmax(0,1.1fr) auto;gap:10px;align-items:center;
+.tr-br{display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.3fr) minmax(0,.8fr) minmax(0,1.3fr) minmax(0,.7fr) minmax(0,.8fr) minmax(0,1.1fr) auto auto;gap:10px;align-items:center;
   padding:10px 14px;border-top:1px solid var(--line);font-size:12.5px}
 .tr-br>span{min-width:0}
 .tr-br .m{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--dim);
@@ -4342,7 +4347,7 @@ function openSearch(){
   if(document.getElementById('searchOv')) return;
   const ov=el('div',{class:'search-ov',id:'searchOv'});
   const box=el('div',{class:'search-box'});
-  const inp=el('input',{class:'search-inp',type:'text',placeholder:'Buscar proyecto por nombre o número…'});
+  const inp=el('input',{class:'search-inp',type:'text',placeholder:'Buscar proyecto, trámite o propietario…'});
   const list=el('div',{class:'search-list'});
   box.append(inp,list); ov.append(box); document.body.append(ov);
   const close=()=>ov.remove();
@@ -4352,10 +4357,32 @@ function openSearch(){
   const all=[];
   data.areas.forEach(a=>a.columns.forEach(c=>all.push({area:a,col:c})));
 
+  /* Cuando llega un correo de la SEREMI trae el numero del tramite, no el
+     nombre del proyecto. Antes habia que ir adivinando de cual era. Ahora
+     se busca tambien por numero de ingreso, por propietario y por rut, y
+     al elegirlo se abre la ficha de ESE tramite, no la del proyecto. */
+  const soloDigitos = x => String(x||'').replace(/[^0-9kK]/g,'').toLowerCase();
+  function tramiteQueCalza(col, q){
+    const qd=soloDigitos(q);
+    return (col.tram||[]).find(t =>
+      normTxt(String(t.expediente||'')).includes(q) ||
+      normTxt(String(t.propietario||'')).includes(q) ||
+      (qd.length>=5 && soloDigitos(t.rut).includes(qd))
+    ) || null;
+  }
+  const abrir = x => { close();
+    if(x.tram){ trFicha(x.col, x.tram); return; }
+    if(x.col.archived) openFicha(x.area,x.col); else goToProject(x.area,x.col); };
+
   let sel=0, current=[];
   function draw(){
     const q=normTxt(inp.value.trim());
-    current = all.filter(x=> !q || normTxt(x.col.name).includes(q))
+    current = all.map(x=>{
+        if(!q) return { area:x.area, col:x.col, tram:null };
+        const porNombre = normTxt(x.col.name).includes(q);
+        const t = tramiteQueCalza(x.col, q);
+        return (porNombre || t) ? { area:x.area, col:x.col, tram: porNombre? null : t } : null;
+      }).filter(Boolean)
       .sort((A,B)=> (A.col.archived?1:0)-(B.col.archived?1:0))
       .slice(0,40);
     list.innerHTML='';
@@ -4369,9 +4396,10 @@ function openSearch(){
       if(m.anticipo && !m.rev0) bits.push(daysBetween(m.anticipo)+'d');
       if(f.presu>0) bits.push('cobrado '+Math.round(f.pct*100)+'%');
       if(pend) bits.push(pend+' pend.');
+      if(x.tram) bits.unshift('trámite '+x.tram.expediente+' · '+tramEstadoN(x.tram.estado));
       const row=el('div',{class:'search-row'+(i===sel?' on':''),
         onmouseenter:()=>{ sel=i; hi(); },
-        onclick:()=>{ close(); if(x.col.archived) openFicha(x.area,x.col); else goToProject(x.area,x.col); }},
+        onclick:()=>abrir(x)},
         el('span',{class:'sr-name',text:x.col.name}),
         el('span',{class:'sr-meta',text:bits.join(' · ')}),
         el('button',{class:'sr-ficha',title:'Abrir ficha',onclick:(e)=>{ e.stopPropagation(); close(); openFicha(x.area,x.col); }},'✎'));
@@ -4384,7 +4412,7 @@ function openSearch(){
     if(e.key==='Escape'){ close(); }
     else if(e.key==='ArrowDown'){ e.preventDefault(); sel=Math.min(sel+1,current.length-1); hi(); ensureVis(); }
     else if(e.key==='ArrowUp'){ e.preventDefault(); sel=Math.max(sel-1,0); hi(); ensureVis(); }
-    else if(e.key==='Enter'){ const x=current[sel]; if(x){ close(); if(x.col.archived) openFicha(x.area,x.col); else goToProject(x.area,x.col); } }
+    else if(e.key==='Enter'){ const x=current[sel]; if(x) abrir(x); }
   });
   function ensureVis(){ const r=list.children[sel]; if(r) r.scrollIntoView({block:'nearest'}); }
   draw(); setTimeout(()=>inp.focus(),30);
@@ -5505,7 +5533,8 @@ function renderTramitacion(root){
         estado.append(el('span',{class:'f',text:[t.resol?('res. '+t.resol):'', t.resolFecha?trFechaCorta(t.resolFecha):''].filter(Boolean).join(' · ')}));
 
       const fila=el('button',{class:'tr-r'+(sinResp!=null?' urge':''),onclick:()=>trFicha(col,t)},
-        el('span',{class:'tn'}, tramNombre(t.tipo), t.detalle? el('small',{text:t.detalle}) : null),
+        el('span',{class:'tn'}, tramNombre(t.tipo), t.detalle? el('small',{text:t.detalle}) : null,
+          t.expediente? el('small',{class:'exp',text:'N° '+t.expediente}) : null),
         el('span',{class:'tr-aut'},
           el('span',{class:'an'},
             el('span',{class:'tr-tag '+(t.autTipo||'seremi'),text:(t.autTipo==='sanitaria'?'sanitaria':t.autTipo==='apr'?'apr':t.autTipo==='muni'?'municipio':'seremi')}),
@@ -6146,8 +6175,12 @@ function estadoDesdePortal(estadoPortal, pronunciamiento){
   if(/observ|subsan/.test(p)) return 'observado';
   if(/rechaz/.test(e)) return 'rechazado';
   if(/aprob|aprueb|resuelto|firmad/.test(e)) return 'aprobado';
-  if(/observ/.test(e)) return 'observado';
-  if(/evaluacion|pagado|ingresad|tramite|revision|programad/.test(e)) return 'revision';
+  /* "Con antecedentes pendientes" es como el portal escribe observado:
+     no dice "observacion" en ninguna parte. */
+  if(/observ|antecedentes pendientes/.test(e)) return 'observado';
+  /* "Por firmar" es el paso siguiente a resolver las observaciones: ya no
+     esta observado, pero todavia no esta firmado. Ojo que no es "firmado". */
+  if(/evaluacion|pagado|ingresad|tramite|revision|programad|por firmar/.test(e)) return 'revision';
   return null;
 }
 
@@ -6241,7 +6274,23 @@ function trAplicarImportacion(plan){
       if(!t.rut && f.rut) t.rut=f.rut;
       if(p.nuevoEstado && p.nuevoEstado!==t.estado){
         trApunte(t,'estado','El portal dice: '+(f.pronunciamiento||f.estadoPortal)+'.');
+        const antes=t.estado;
         t.estado=p.nuevoEstado;
+        /* El Excel del portal dice QUE quedo observado, pero no CUANDO ni por
+           que: esas dos cosas viven en el historial, que no se exporta. Abro
+           la ronda vacia para que salte a la vista en la ficha, y la dejo sin
+           fecha a proposito. Un plazo inventado es peor que ningun plazo. */
+        if(p.nuevoEstado==='observado'){
+          if(!t.rondas) t.rondas=[];
+          const abierta=t.rondas.length ? t.rondas[t.rondas.length-1] : null;
+          if(!abierta || abierta.resp){
+            t.rondas.push({ id:uid(), obs:'', fecha:'', resp:'' });
+            trApunte(t,'observacion','Ronda '+t.rondas.length+' abierta desde el portal. Falta ponerle la fecha y el texto.');
+          }
+        }
+        if(antes==='observado' && p.nuevoEstado!=='observado'){
+          trApunte(t,'observacion','El portal ya no lo tiene observado. Si respondiste, anota la fecha en la ronda.');
+        }
       }
       tocados++;
     }
@@ -6355,7 +6404,14 @@ function trBandeja(view){
         if(!col.comuna && t.comuna) col.comuna=t.comuna;
         data.tramBandeja=(data.tramBandeja||[]).filter(x=>x!==t);
         save(); render();
-      }},'Asignar')));
+      }},'Asignar'),
+      /* Si pegas el Excel completo del portal llegan tambien los tramites de
+         otros proyectistas. Esto los saca de la vista; no toca el portal. */
+      el('button',{class:'tr-btn',title:'Sacar de la bandeja',onclick:()=>{
+        if(!confirm('¿Sacar el trámite '+t.expediente+' de la bandeja?\n\nNo se borra del portal: solo deja de aparecer aquí.')) return;
+        data.tramBandeja=(data.tramBandeja||[]).filter(x=>x!==t);
+        save(); render();
+      }},'✕')));
   });
   view.append(caja);
 }
