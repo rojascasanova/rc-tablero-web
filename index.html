@@ -18,7 +18,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-  window.RC_VERSION = '2.1.8';   // subir esto en cada versión nueva
+  window.RC_VERSION = '2.2.0';   // subir esto en cada versión nueva
   // Conexión a tu base de datos Supabase (tablero-rc)
   window.RC_SUPABASE_URL  = 'https://sdzybsyxyfbyrynhumig.supabase.co';
   window.RC_SUPABASE_ANON = 'sb_publishable_ycU09SDH1kMB5PqnfzkguQ_TIVFvmw-';
@@ -1066,6 +1066,13 @@ input,select,textarea{font-family:inherit}
 .tr-c select option{background:var(--panel);color:var(--paper)}
 .tr-c input::placeholder,.tr-rd textarea::placeholder,.rv-nota textarea::placeholder{color:var(--faint);opacity:1}
 .tr-c .ro{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--dim)}
+/* El PDF no se guarda en el tablero: se guarda el enlace. El archivo sigue
+   viviendo en Dropbox, donde ya estaba. */
+.tr-link{display:flex;gap:7px;align-items:center;min-width:0}
+.tr-link input{flex:1;min-width:0}
+.tr-ab{flex:none;background:none;border:1px solid var(--line);border-radius:6px;color:var(--dim);
+  font-size:11px;line-height:1;padding:4px 7px;cursor:pointer}
+.tr-ab:hover{border-color:var(--line-strong);color:var(--paper)}
 .tr-sub{font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:1.3px;text-transform:uppercase;
   color:var(--faint);margin:20px 0 10px;display:flex;align-items:center;gap:10px}
 .tr-sub:after{content:'';flex:1;height:1px;background:var(--line)}
@@ -3693,13 +3700,29 @@ function renderPresCard(p){
       el('button',{class:'pa aprob',onclick:()=>aprobarPresupuesto(p)},'✓ Aprobado'),
       el('button',{class:'pa caido',onclick:()=>caerPresupuesto(p)},'✕ Cayó'));
   } else if(p.estado==='aprobado'){
-    acts.append(el('button',{class:'pa',onclick:()=>{ p.estado='enviado'; render(); }},'↺ Reabrir'));
+    acts.append(el('button',{class:'pa',onclick:()=>{
+      p.estado='enviado';
+      /* La columna del tablero no se iba sola y quedaba ahi vacia. */
+      const col=colDelPresupuesto(p);
+      if(col && !col.archived && confirm('"'+p.nombre+'" vuelve a Enviado.\n\n¿Archivo también su columna del tablero?\nQueda en Archivados con sus tareas, su ficha y su economía. Si el cliente confirma, vuelve sola al aprobarlo de nuevo.'))
+        col.archived=true;
+      render(); }},'↺ Reabrir'));
   } else if(p.estado==='caido'){
     acts.append(el('button',{class:'pa',onclick:()=>{ p.estado='enviado'; p.motivo=''; render(); }},'↺ Reabrir'));
   }
   acts.append(el('button',{class:'pa del',title:'Eliminar',onclick:()=>{ if(confirm('¿Eliminar "'+p.nombre+'" del embudo?')){ data.presupuestos=data.presupuestos.filter(x=>x!==p); save(); render(); } }},'✕'));
   card.append(acts);
   return card;
+}
+
+/* La tarjeta del embudo y la columna del tablero se llaman igual: asi se
+   encontraron cuando se aprobo el presupuesto. Busco en todas las areas,
+   no solo en EMEP, para no crear una segunda columna con el mismo nombre. */
+function colDelPresupuesto(p){
+  for(const a of (data.areas||[]))
+    for(const c of (a.columns||[]))
+      if(c.name===p.nombre) return c;
+  return null;
 }
 
 function caerPresupuesto(p){
@@ -3712,15 +3735,23 @@ function caerPresupuesto(p){
 function aprobarPresupuesto(p){
   p.estado='aprobado';
   let area=data.areas.find(a=>a.name==='EMEP')||data.areas[0];
+  let aviso='';
   if(area){
-    if(!area.columns.some(c=>c.name===p.nombre)){
+    const ya=colDelPresupuesto(p);
+    if(ya){
+      /* Si la habias archivado al reabrirlo, vuelve con todo lo que tenia:
+         antes quedaba escondida en Archivados y parecia que no pasaba nada. */
+      if(ya.archived){ ya.archived=false; aviso='"'+p.nombre+'" aprobado de nuevo. Su columna volvió de Archivados con sus tareas y su ficha.'; }
+      else aviso='"'+p.nombre+'" aprobado. Su columna ya estaba en el tablero.';
+    } else {
       area.columns.unshift({ id:uid(), name:p.nombre, tasks:[],
         meta:{anticipo:null,revA:null,revB:null,rev0:null,team:{},
           fin:{presupuesto:(p.moneda==='CLP'?p.monto:0),cobrado:0,pagosList:[]}} });
+      aviso='"'+p.nombre+'" aprobado. Se creó la columna en '+area.name+' para cargar sus tareas y ficha.';
     }
     data.ui.currentAreaId=area.id;
-  }
-  alert('"'+p.nombre+'" aprobado. Se creó la columna en '+(area?area.name:'el tablero')+' para cargar sus tareas y ficha.');
+  } else aviso='"'+p.nombre+'" aprobado.';
+  alert(aviso);
   render();
 }
 
@@ -5603,6 +5634,16 @@ function trFicha(col, t){
     oninput:e=>{ fn(e.target.value); }, onblur:()=>{ save(); }});
   const inputFecha=(val,fn)=>el('input',{type:'date',value:val||'',
     onchange:e=>{ fn(e.target.value); save(); repintar(); }});
+  /* Guarda el enlace, no el archivo: el tablero entero viaja en cada
+     sincronizacion y un PDF adentro lo volveria pesadisimo. */
+  const inputEnlace=(val,fn)=>{
+    const c=el('div',{class:'tr-link'});
+    c.append(el('input',{type:'text',value:val||'',placeholder:'pega el enlace de Dropbox…',
+      oninput:e=>{ fn(e.target.value.trim()); }, onblur:()=>{ save(); repintar(); }}));
+    if(val) c.append(el('button',{class:'tr-ab',title:'Abrir el documento',
+      onclick:()=>window.open(val,'_blank','noopener')},'↗'));
+    return c;
+  };
 
   function pintar(){
     caja.append(el('h4',{text:col.name+' · '+tramNombre(t.tipo)}));
@@ -5659,6 +5700,8 @@ function trFicha(col, t){
       campos.append(campo(t.estado==='aprobado'?'Fecha de aprobación':'Fecha del rechazo',
         inputFecha(t.resolFecha, v=>t.resolFecha=v)));
     }
+    campos.append(campo('Resolución (PDF)', inputEnlace(t.docResol, v=>t.docResol=v), 'w2'));
+    campos.append(campo('Informe', inputEnlace(t.docInforme, v=>t.docInforme=v), 'w2'));
     campos.append(campo('A cargo en EMEP', inputTexto(t.aCargo, v=>t.aCargo=v, 'Marco Riveros'), 'w2'));
     if(t.propietario || t.rut || t.valor!=null || t.estadoPortal){
       campos.append(campo('Propietario', inputTexto(t.propietario, v=>t.propietario=v, ''), 'w2'));
@@ -5956,6 +5999,17 @@ function trPdf(cliente, conRevisor, conCerrados){
   const todos=[].concat(...grupos.map(g=>g.lista));
   const n = e => todos.filter(t=>t.estado===e).length;
 
+  /* El enlace al documento. En un PDF guardado desde el navegador queda
+     clickeable; impreso en papel, claro, es solo una linea mas. */
+  const docsPdf = t => {
+    let o='';
+    const url = u => { const v=String(u||'').trim();
+      return (v.toLowerCase().indexOf('http://')===0 || v.toLowerCase().indexOf('https://')===0) ? v : ''; };
+    if(url(t.docResol))   o += '<a class="doc" href="'+esc(url(t.docResol))+'">Resolución ↗</a>';
+    if(url(t.docInforme)) o += '<a class="doc" href="'+esc(url(t.docInforme))+'">Informe ↗</a>';
+    return o;
+  };
+
   const orden=TRAM_TIPOS.map(x=>x[0]);
   let filas='';
   grupos.forEach(({col,lista})=>{
@@ -5965,7 +6019,7 @@ function trPdf(cliente, conRevisor, conCerrados){
       const d=trDias(t), ult=trUltimaRonda(t), nR=(t.rondas||[]).length;
       const cls = t.estado==='aprobado'?'ok' : t.estado==='rechazado'?'no' : '';
       const estTxt = tramEstadoN(t.estado) + ((t.estado==='aprobado'||t.estado==='rechazado')&&t.resolFecha
-                     ? ' '+trFechaCorta(t.resolFecha) : '');
+                     ? ' '+trFecha(t.resolFecha) : '');
       filas += '<tr>'+
         '<td class="ti">'+esc(tramNombre(t.tipo))+'</td>'+
         '<td>'+esc([autTipoN(t.autTipo)==='SEREMI de Salud'?'SEREMI':'', t.autoridad].filter(Boolean).join(' '))+
@@ -5976,7 +6030,8 @@ function trPdf(cliente, conRevisor, conCerrados){
         '<td class="mo">'+(d==null?'—':d)+'</td>'+
         '<td class="mo">'+(ult&&ult.fecha? trFechaCorta(ult.fecha)+(nR>1?' ('+nR+'ª)':'') : '—')+'</td>'+
         '<td class="mo">'+(ult&&ult.resp? trFechaCorta(ult.resp) : '—')+'</td>'+
-        '<td><span class="est '+cls+'">'+esc(estTxt)+'</span></td>'+
+        '<td><span class="est '+cls+'">'+esc(estTxt)+'</span>'+
+          (t.resol? '<span class="res">Res. N° '+esc(t.resol)+'</span>' : '')+docsPdf(t)+'</td>'+
       '</tr>';
     });
   });
@@ -6036,6 +6091,9 @@ function trPdf(cliente, conRevisor, conCerrados){
   '.est{font-family:"IBM Plex Mono",monospace;font-size:7px;letter-spacing:.1em;text-transform:uppercase;'+
     'border:.5px solid #B8B6B0;border-radius:10px;padding:2px 6px;white-space:nowrap;color:#3D3D3C;display:inline-block}'+
   '.est.ok{border-color:#0A0A0A;color:#0A0A0A}.est.no{border-color:#D94A2B;color:#D94A2B}'+
+  '.res{display:block;font-family:"IBM Plex Mono",monospace;font-size:7.3px;color:#3D3D3C;margin-top:3px}'+
+  'a.doc{display:block;font-family:"IBM Plex Mono",monospace;font-size:7px;letter-spacing:.08em;'+
+    'text-transform:uppercase;color:#3D3D3C;text-decoration:underline;margin-top:3px}'+
   '.acc{display:grid;grid-template-columns:118px 1fr 92px;gap:12px;padding:9px 0;border-bottom:.5px solid #D4D2CC;'+
     'font-size:8.8px;line-height:1.5;page-break-inside:avoid}'+
   '.acc .p{font-weight:500}'+
