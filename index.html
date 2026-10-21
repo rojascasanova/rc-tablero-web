@@ -18,7 +18,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-  window.RC_VERSION = '2.2.0';   // subir esto en cada versión nueva
+  window.RC_VERSION = '2.2.1';   // subir esto en cada versión nueva
   // Conexión a tu base de datos Supabase (tablero-rc)
   window.RC_SUPABASE_URL  = 'https://sdzybsyxyfbyrynhumig.supabase.co';
   window.RC_SUPABASE_ANON = 'sb_publishable_ycU09SDH1kMB5PqnfzkguQ_TIVFvmw-';
@@ -1770,7 +1770,7 @@ function renderTop(){
   else if(data.ui.view==='tiempo'){ t.textContent='Tiempo'; s.textContent='horas por proyecto y por día · navega por mes'; }
   else if(data.ui.view==='marketing'){ t.textContent='Marketing'; s.textContent='qué publicaste, dónde y cuándo · IG y LinkedIn'; }
   else if(data.ui.view==='publicidad'){ t.textContent='Gasto publicitario'; s.textContent='lo que se va en anuncios, por marca · Meta y otras plataformas'; }
-  else if(data.ui.view==='archivados'){ const n=data.areas.reduce((s2,a)=>s2+a.columns.filter(c=>c.archived).length,0); t.textContent='Archivados'; s.textContent=n+' proyecto'+(n===1?'':'s')+' archivado'+(n===1?'':'s')+' · siguen contando en Finanzas'; }
+  else if(data.ui.view==='archivados'){ const n=data.areas.reduce((s2,a)=>s2+a.columns.filter(c=>c.archived).length,0); t.textContent='Archivados'; s.textContent=n+' proyecto'+(n===1?'':'s')+' archivado'+(n===1?'':'s')+' · no cuentan en Finanzas ni en la franja de plata'; }
   else if(data.ui.view==='presupuestos'){ t.textContent='Presupuestos'; s.textContent='embudo de cotizaciones · enviado → aprobado / caído'; }
   else if(data.ui.view==='emitir'){ t.textContent='Emitir presupuesto'; s.textContent='generador EMEP · UF del día automática'; }
   else if(data.ui.view==='tramitacion'){
@@ -1808,6 +1808,10 @@ function renderPlataBar(){
   let porCobrar=0, presu=0, cobrado=0;
   let sinAnticipo=0, sinAnticipoMonto=0, nProy=0;
   a.columns.forEach(c=>{
+    /* Un proyecto archivado ya no esta en juego: su plata no es algo que
+       estes esperando. Finanzas ya los saltaba; esta barra no, y por eso
+       un proyecto devuelto al embudo seguia sumando a "por cobrar". */
+    if(c.archived) return;
     const fin=(c.meta&&c.meta.fin)||{};
     const p=fin.presupuesto||0;
     if(!p) return;
@@ -1830,8 +1834,12 @@ function renderPlataBar(){
       'Suma de lo que falta pagarte en '+nProy+' proyecto'+(nProy===1?'':'s')+' con presupuesto cargado'),
     chip('pc-riesgo', clp(sinAnticipoMonto), sinAnticipo+' sin anticipo',
       'Proyectos aprobados donde todavía no te pagan nada'),
-    chip('pc-ok', clp(cobrado)+' · '+pct+'%', 'cobrado',
-      'De un total presupuestado de '+clp(presu))
+    /* Antes aqui iba lo cobrado. Lo que de verdad sirve de un vistazo es
+       cuanto suman los proyectos aprobados; lo cobrado queda en el titulo
+       flotante y en Finanzas. */
+    chip('pc-ok', clp(presu), nProy+' aprobado'+(nProy===1?'':'s'),
+      'Suma de los presupuestos de los proyectos aprobados y activos. '+
+      'Cobrado hasta hoy: '+clp(cobrado)+' ('+pct+'%). No incluye los archivados.')
   );
 }
 
