@@ -18,7 +18,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-  window.RC_VERSION = '2.2.3';   // subir esto en cada versión nueva
+  window.RC_VERSION = '2.2.4';   // subir esto en cada versión nueva
   // Conexión a tu base de datos Supabase (tablero-rc)
   window.RC_SUPABASE_URL  = 'https://sdzybsyxyfbyrynhumig.supabase.co';
   window.RC_SUPABASE_ANON = 'sb_publishable_ycU09SDH1kMB5PqnfzkguQ_TIVFvmw-';
@@ -496,6 +496,38 @@ input,select,textarea{font-family:inherit}
 .pres-cards{display:flex;flex-direction:column;gap:9px}
 .pres-empty{color:var(--faint);font-size:12px;text-align:center;padding:14px 0}
 .pres-card{background:var(--card);border:1px solid var(--line);border-radius:9px;padding:10px 11px}
+.pres-card{cursor:pointer;transition:border-color .15s}
+.pres-card:hover{border-color:var(--line-strong)}
+.pres-card.sel{border-color:var(--p2,#c99148);box-shadow:0 0 0 1px var(--p2,#c99148) inset}
+.seg-tbl tbody tr{cursor:pointer}
+.seg-tbl tbody tr:hover td{background:rgba(255,255,255,.04)}
+.seg-tbl tbody tr.sel td{background:rgba(201,145,72,.10)}
+body.con-vista .pres-view{margin-right:calc(min(760px,44vw) + 12px)}
+#presVista{position:fixed;top:0;right:0;bottom:0;width:min(760px,44vw);min-width:380px;z-index:60;
+  background:var(--bg);border-left:1px solid var(--line-strong);display:flex;flex-direction:column;
+  box-shadow:-18px 0 40px rgba(0,0,0,.25)}
+#presVista .pv-head{padding:16px 18px 12px;border-bottom:1px solid var(--line);display:flex;gap:12px;align-items:flex-start}
+#presVista .pv-tit{flex:1;min-width:0}
+#presVista .pv-num{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--faint);letter-spacing:.5px}
+#presVista .pv-nom{font-size:17px;font-weight:500;margin:2px 0 3px}
+#presVista .pv-meta{font-size:12px;color:var(--dim)}
+#presVista .pv-line{font-family:'IBM Plex Mono',monospace;font-size:12.5px;margin-top:6px;display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+#presVista .pv-est{font-size:9.5px;letter-spacing:1px;text-transform:uppercase;padding:2px 7px;border-radius:5px;border:1px solid var(--line-strong)}
+#presVista .pv-est.enviado{color:var(--p2,#c99148);border-color:currentColor}
+#presVista .pv-est.aprobado{color:var(--today,#7fb2ab);border-color:currentColor}
+#presVista .pv-est.caido{color:var(--p1,#c0574a);border-color:currentColor}
+#presVista .pv-btns{display:flex;gap:6px;flex-shrink:0}
+#presVista .pv-btns button{font-family:'IBM Plex Mono',monospace;font-size:10.5px;padding:6px 10px;border-radius:7px;border:1px solid var(--line-strong);color:var(--paper)}
+#presVista .pv-btns button:hover{background:var(--panel-2)}
+#presVista .pv-body{flex:1;position:relative;overflow:hidden;background:#e9e7e1}
+#presVista iframe{border:0;width:100%;height:100%;display:block;opacity:0;transition:opacity .2s}
+#presVista iframe.listo{opacity:1}
+#presVista .pv-cargando{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#777}
+#presVista .pv-sin{padding:22px;font-size:13px;color:var(--dim);background:var(--bg);height:100%}
+#presVista .pv-sin table{margin-top:14px;border-collapse:collapse;font-size:12.5px}
+#presVista .pv-sin td{padding:5px 14px 5px 0;border-bottom:1px solid var(--line)}
+#presVista .pv-sin td:first-child{color:var(--faint);font-family:'IBM Plex Mono',monospace;font-size:10.5px;text-transform:uppercase;letter-spacing:.8px}
+
 .pres-card:hover{border-color:var(--line-strong)}
 .pres-nombre{font-size:13.5px;font-weight:500;line-height:1.35;outline:none}
 .pres-nombre:focus{border-bottom:1px solid var(--line-strong)}
@@ -1964,6 +1996,7 @@ function renderMain(){
   // La pestaña de publicidad se redibuja sola; si dejamos de mostrarla hay que
   // soltar ese pintador o quedaría escribiendo en nodos que ya no existen.
   if(data.ui.view!=='publicidad') ADS_PINTAR=null;
+  if(data.ui.view!=='presupuestos' && PRES_VISTA) cerrarVistaPres();
   if(data.ui.view==='hoy') return renderToday(root);
   if(data.ui.view==='tramitacion') return renderTramitacion(root);
   if(data.ui.view==='revisores') return renderRevisores(root);
@@ -3720,7 +3753,70 @@ function oficinaKey(cliente){
   s=s.replace(/\s+/g,' ').trim();
   return s || '_sin';
 }
-let PRES_FILTRO=null;   // oficina elegida en «Por oficina» (solo en pantalla, no se sincroniza)
+let PRES_FILTRO=null;
+let PRES_VISTA=null;    // id del presupuesto abierto en el panel derecho (solo en pantalla)
+function cerrarVistaPres(){
+  PRES_VISTA=null;
+  const d=document.getElementById('presVista'); if(d) d.remove();
+  document.body.classList.remove('con-vista');
+  document.querySelectorAll('.pres-card.sel,.seg-tbl tr.sel').forEach(x=>x.classList.remove('sel'));
+}
+function abrirVistaPres(p){
+  if(PRES_VISTA===p.id){ cerrarVistaPres(); return; }      // segundo clic: cierra
+  PRES_VISTA=p.id;
+  let d=document.getElementById('presVista');
+  if(d) d.remove();
+  d=el('div',{id:'presVista'});
+  const est={enviado:'Enviado',aprobado:'Aprobado',caido:'Caído'}[p.estado]||p.estado;
+  const meta=[p.cliente,p.comuna].filter(Boolean).join(' · ');
+  d.append(el('div',{class:'pv-head'},
+    el('div',{class:'pv-tit'},
+      el('div',{class:'pv-num',text:p.numero?('N° '+fmtPresupCodigo(p.numero)):'Sin número'}),
+      el('div',{class:'pv-nom',text:p.nombre}),
+      meta?el('div',{class:'pv-meta',text:meta}):null,
+      el('div',{class:'pv-line'},
+        el('span',{text:presMoneda(p)}),
+        el('span',{class:'pv-est '+p.estado,text:est}),
+        el('span',{style:'color:var(--faint)',text:p.fechaEnvio?'env. '+p.fechaEnvio:''}))),
+    el('div',{class:'pv-btns'},
+      p.datos?el('button',{title:'Abrir en el generador para cambiarlo',onclick:()=>{ cerrarVistaPres(); editarPresupuesto(p); }},'✎ Editar'):null,
+      el('button',{title:'Cerrar (Esc)',onclick:cerrarVistaPres},'✕'))));
+  const body=el('div',{class:'pv-body'});
+  if(p.datos){
+    const cargando=el('div',{class:'pv-cargando',text:'Cargando presupuesto…'});
+    const fr=el('iframe',{src:'emep-presupuesto.html',title:'Vista del presupuesto'});
+    const ajustar=()=>{ try{
+      const doc=fr.contentDocument, sh=doc.getElementById('sheet'); if(!sh) return;
+      const w=fr.clientWidth-28, ancho=sh.offsetWidth||794;
+      doc.querySelector('.preview-inner').style.zoom=Math.min(1.4,Math.max(.3,w/ancho));
+    }catch(e){} };
+    fr.addEventListener('load',()=>{ setTimeout(()=>{ try{
+      const doc=fr.contentDocument;
+      doc.head.append(Object.assign(doc.createElement('style'),{textContent:
+        '.panel{display:none!important}.app{display:block!important;min-height:0!important}'+
+        '.preview{padding:14px!important;overflow:visible!important}html,body{background:#e9e7e1!important}'+
+        '.sheet{box-shadow:0 4px 18px rgba(0,0,0,.12)!important;margin-bottom:14px!important}'}));
+      aplicarDatosGenerador(fr, p.datos);
+      ajustar(); fr.classList.add('listo'); cargando.remove();
+      // la UF guardada se reafirma a los 1,6 s: vuelve a ajustar cuando termine
+      setTimeout(ajustar,1800);
+    }catch(e){ cargando.textContent='No se pudo cargar la vista.'; } },350); });
+    window.addEventListener('resize',ajustar);
+    body.append(cargando,fr);
+  } else {
+    const filas=[['Proyecto',p.nombre],['Cliente',p.cliente||'—'],['Comuna',p.comuna||'—'],['Monto',presMoneda(p)],['Enviado',p.fechaEnvio||'—']];
+    if(p.motivo) filas.push(['Motivo',p.motivo]);
+    body.append(el('div',{class:'pv-sin'},
+      el('div',{text:'Este presupuesto se cargó a mano (o antes de que el tablero guardara los datos del generador), así que no hay hoja para mostrar. Esto es lo que hay registrado:'}),
+      el('table',{},...filas.map(([k,v])=>el('tr',{},el('td',{text:k}),el('td',{text:v}))))));
+  }
+  d.append(body);
+  document.body.append(d);
+  document.body.classList.add('con-vista');
+  document.querySelectorAll('[data-pres-id]').forEach(x=>x.classList.toggle('sel',x.dataset.presId===p.id));
+}
+document.addEventListener('keydown',e=>{ if(e.key==='Escape' && PRES_VISTA) cerrarVistaPres(); });
+   // oficina elegida en «Por oficina» (solo en pantalla, no se sincroniza)
 function renderPorOficina(){
   const wrap=el('div',{class:'ofi-wrap'});
   const ps=(data.presupuestos||[]).filter(p=>p.cliente && p.cliente.trim());
@@ -3797,12 +3893,15 @@ function renderSeguimientoOficina(key){
     const tb=el('tbody');
     env.forEach(p=>{
       const d=dias(p.fechaEnvio);
-      tb.append(el('tr',{class:(d!=null&&d>=30)?'viejo':''},
+      const tr=el('tr',{class:((d!=null&&d>=30)?'viejo':'')+(PRES_VISTA===p.id?' sel':''),title:'Clic para ver el presupuesto',onclick:()=>abrirVistaPres(p)});
+      tr.dataset.presId=p.id;
+      tb.append(tr);
+      tr.append(
         el('td',{class:'mono',text:num(p)||'—'}),
         el('td',{}, p.nombre, p.comuna?el('span',{style:'color:var(--faint)',text:' · '+p.comuna}):null),
         el('td',{class:'mono r',text:presMoneda(p)}),
         el('td',{class:'mono',text:fCorta(p.fechaEnvio)}),
-        el('td',{class:'mono r dias',text:d==null?'':('hace '+d+' d')})));
+        el('td',{class:'mono r dias',text:d==null?'':('hace '+d+' d')}));
     });
     box.append(el('table',{class:'seg-tbl'},
       el('thead',{},el('tr',{},el('th',{text:'N°'}),el('th',{text:'Proyecto enviado'}),el('th',{class:'r',text:'Monto'}),el('th',{text:'Enviado'}),el('th',{class:'r',text:'Esperando'}))),
@@ -3814,7 +3913,8 @@ function renderSeguimientoOficina(key){
 }
 
 function renderPresupuestos(root){
-  const view=el('div',{class:'today-view'});
+  const view=el('div',{class:'today-view pres-view'});
+  if(PRES_VISTA && !data.presupuestos.some(p=>p.id===PRES_VISTA)) cerrarVistaPres();
 
   const add=el('div',{class:'pres-add'});
   const iNombre=el('input',{class:'pres-in',type:'text',placeholder:'Nombre del proyecto / cotización…'});
@@ -3862,7 +3962,12 @@ function renderPresupuestos(root){
 }
 
 function renderPresCard(p){
-  const card=el('div',{class:'pres-card'});
+  const card=el('div',{class:'pres-card'+(PRES_VISTA===p.id?' sel':''),title:'Clic para ver el presupuesto'});
+  card.dataset.presId=p.id;
+  card.addEventListener('click',e=>{
+    if(e.target.closest('button,[contenteditable="true"],.edit-monto,input,select')) return;
+    abrirVistaPres(p);
+  });
   if(p.numero){ card.append(el('div',{class:'pres-meta mono',style:'opacity:.7;margin-bottom:2px',text:'N° '+fmtPresupCodigo(p.numero)})); }
   card.append(el('div',{class:'pres-nombre',contenteditable:'true',text:p.nombre,
     onblur:e=>{ const v=e.target.textContent.trim(); if(v){p.nombre=v;save();} else e.target.textContent=p.nombre; }}));
