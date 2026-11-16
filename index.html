@@ -18,7 +18,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-  window.RC_VERSION = '2.2.1';   // subir esto en cada versión nueva
+  window.RC_VERSION = '2.2.3';   // subir esto en cada versión nueva
   // Conexión a tu base de datos Supabase (tablero-rc)
   window.RC_SUPABASE_URL  = 'https://sdzybsyxyfbyrynhumig.supabase.co';
   window.RC_SUPABASE_ANON = 'sb_publishable_ycU09SDH1kMB5PqnfzkguQ_TIVFvmw-';
@@ -168,6 +168,27 @@ input,select,textarea{font-family:inherit}
 .pc-cobrar .pv{color:var(--p2,#c99148)}
 .pc-riesgo .pv{color:var(--p1,#c0574a)}
 .pc-ok .pv{color:var(--today,#7fb2ab)}
+.pchip.pc-click{cursor:pointer;transition:border-color .15s,background .15s}
+.pchip.pc-click:hover{border-color:var(--line-strong);background:rgba(255,255,255,.05)}
+.cob-modal{width:min(760px,94vw)!important}
+.cob-tot{display:flex;gap:18px;flex-wrap:wrap;margin:-4px 0 14px;font-family:'IBM Plex Mono',monospace}
+.cob-tot div{display:flex;flex-direction:column;gap:2px}
+.cob-tot b{font-size:20px;font-weight:500}
+.cob-tot span{font-size:9.5px;letter-spacing:1.1px;text-transform:uppercase;color:var(--faint)}
+.cob-tbl{width:100%;border-collapse:collapse;font-size:12.5px}
+.cob-tbl th{font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:1px;text-transform:uppercase;color:var(--faint);font-weight:400;text-align:right;padding:6px 8px;border-bottom:1px solid var(--line)}
+.cob-tbl th:first-child,.cob-tbl td:first-child{text-align:left}
+.cob-tbl td{padding:8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+.cob-tbl td:first-child{white-space:normal}
+.cob-tbl tbody tr{cursor:pointer}
+.cob-tbl tbody tr:hover td{background:rgba(255,255,255,.04)}
+.cob-tbl .mono{font-family:'IBM Plex Mono',monospace}
+.cob-tbl .falta{color:var(--p2,#c99148);font-weight:500}
+.cob-tbl tr.sin-ant .falta{color:var(--p1,#c0574a)}
+.cob-tbl .sub{display:block;font-size:10.5px;color:var(--faint);margin-top:2px;font-family:'IBM Plex Mono',monospace}
+.cob-tbl tfoot td{border-bottom:none;font-family:'IBM Plex Mono',monospace;font-weight:500;padding-top:10px}
+.cob-bar{height:3px;border-radius:2px;background:var(--line);margin-top:5px;overflow:hidden}
+.cob-bar i{display:block;height:100%;background:var(--p2,#c99148)}
 .zoom-ctl{display:flex;align-items:center;gap:2px;border:1px solid var(--line);border-radius:8px;padding:2px;height:34px}
 .zoom-ctl button{width:28px;height:28px;border-radius:6px;color:var(--dim);font-size:16px;line-height:1;display:grid;place-items:center}
 .zoom-ctl button:hover{color:var(--paper);background:var(--panel)}
@@ -445,6 +466,26 @@ input,select,textarea{font-family:inherit}
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:210px}
 .ofi-monto{font-size:14.5px;font-weight:500;color:var(--p2,#c99148);line-height:1.15}
 .ofi-sub{font-size:9.5px;letter-spacing:.6px;color:var(--faint);margin-top:3px}
+.ofi-chip{cursor:pointer;transition:border-color .15s,background .15s,opacity .15s}
+.ofi-chip:hover{border-color:var(--line-strong);background:rgba(255,255,255,.04)}
+.ofi-chip.on{border-color:var(--p2,#c99148);background:rgba(201,145,72,.08)}
+.ofi-row.filtrando .ofi-chip:not(.on){opacity:.45}
+.seg-box{max-width:1100px;border:1px solid var(--line);border-radius:12px;padding:16px 18px 14px;margin:-4px 0 18px;background:rgba(255,255,255,.02)}
+.seg-head{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:10px}
+.seg-head h3{font-size:16px;font-weight:500;margin:0}
+.seg-head .seg-tot{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--p2,#c99148)}
+.seg-head .seg-sub{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--faint);letter-spacing:.4px}
+.seg-head .seg-btns{margin-left:auto;display:flex;gap:6px}
+.seg-head button{font-family:'IBM Plex Mono',monospace;font-size:10.5px;padding:6px 11px;border-radius:7px;border:1px solid var(--line-strong);color:var(--paper)}
+.seg-head button:hover{background:var(--panel-2)}
+.seg-tbl{width:100%;border-collapse:collapse;font-size:12.5px}
+.seg-tbl th{font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:1px;text-transform:uppercase;color:var(--faint);font-weight:400;text-align:left;padding:5px 8px;border-bottom:1px solid var(--line)}
+.seg-tbl th.r,.seg-tbl td.r{text-align:right}
+.seg-tbl td{padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+.seg-tbl td.mono{font-family:'IBM Plex Mono',monospace;white-space:nowrap}
+.seg-tbl tr.viejo td.dias{color:var(--p1,#c0574a)}
+.seg-tbl tfoot td{border-bottom:none;font-family:'IBM Plex Mono',monospace;font-weight:500;padding-top:9px}
+.seg-pie{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--faint);margin-top:9px}
 .pres-board{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:1100px}
 .pres-col{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;min-height:120px}
 .pres-col-head{display:flex;justify-content:space-between;align-items:center;font-weight:600;font-size:13.5px;padding-bottom:10px;margin-bottom:10px;border-bottom:1px solid var(--line)}
@@ -1830,8 +1871,9 @@ function renderPlataBar(){
     el('span',{class:'pv mono',text:valor}), el('span',{class:'pl',text:etiqueta}));
 
   bar.append(
-    chip('pc-cobrar', clp(porCobrar), 'por cobrar',
-      'Suma de lo que falta pagarte en '+nProy+' proyecto'+(nProy===1?'':'s')+' con presupuesto cargado'),
+    (()=>{ const ch=chip('pc-cobrar pc-click', clp(porCobrar), 'por cobrar ›',
+      'Clic: quién te debe cuánto, proyecto por proyecto');
+      ch.addEventListener('click',()=>openResumenCobrar(a)); return ch; })(),
     chip('pc-riesgo', clp(sinAnticipoMonto), sinAnticipo+' sin anticipo',
       'Proyectos aprobados donde todavía no te pagan nada'),
     /* Antes aqui iba lo cobrado. Lo que de verdad sirve de un vistazo es
@@ -1841,6 +1883,79 @@ function renderPlataBar(){
       'Suma de los presupuestos de los proyectos aprobados y activos. '+
       'Cobrado hasta hoy: '+clp(cobrado)+' ('+pct+'%). No incluye los archivados.')
   );
+}
+
+/* ===== Resumen de lo que me deben: todos los proyectos en una sola vista ===== */
+function openResumenCobrar(a){
+  const filas=[];
+  a.columns.forEach(c=>{
+    if(c.archived) return;
+    const fin=(c.meta&&c.meta.fin)||{};
+    const p=fin.presupuesto||0; if(!p) return;
+    const lista=fin.pagosList||[];
+    const cob=lista.length ? lista.reduce((s,x)=>s+(x.monto||0),0) : (fin.cobrado||0);
+    const falta=p-cob; if(falta<=0) return;
+    const fechas=lista.map(x=>x.fecha).filter(Boolean).sort();
+    const ult=fechas.length?fechas[fechas.length-1]:null;
+    filas.push({c,p,cob,falta,ult,anticipo:(c.meta&&c.meta.anticipo)||null});
+  });
+  filas.sort((x,y)=>y.falta-x.falta);
+  const T=filas.reduce((s,f)=>({p:s.p+f.p,cob:s.cob+f.cob,falta:s.falta+f.falta}),{p:0,cob:0,falta:0});
+  const sinAnt=filas.filter(f=>f.cob<=0);
+  const dias=f=>{ const d=f.ult||f.anticipo; if(!d) return null;
+    return Math.max(0,Math.round((new Date(todayStr())-new Date(d))/86400000)); };
+  const fCorta=d=>d? d.slice(8,10)+'-'+d.slice(5,7) : '';
+
+  const ov=el('div',{class:'modal-ov',onmousedown:e=>{ if(e.target===ov) ov.remove(); }});
+  const tb=el('tbody');
+  filas.forEach(f=>{
+    const pct=Math.round(f.cob/f.p*100);
+    const d=dias(f);
+    const nota = f.cob<=0 ? 'sin anticipo'
+      : (f.ult ? 'último pago '+fCorta(f.ult)+(d!=null?' · hace '+d+'d':'') : '');
+    tb.append(el('tr',{class:f.cob<=0?'sin-ant':'',title:'Abrir la ficha del proyecto',
+        onclick:()=>{ ov.remove(); openFicha(a,f.c); }},
+      el('td',{}, f.c.name, el('span',{class:'sub',text:nota}),
+        el('div',{class:'cob-bar'}, el('i',{style:'width:'+pct+'%'}))),
+      el('td',{class:'mono',text:clp(f.p)}),
+      el('td',{class:'mono',text:clp(f.cob)}),
+      el('td',{class:'mono',text:pct+'%'}),
+      el('td',{class:'mono falta',text:clp(f.falta)})
+    ));
+  });
+  const tabla=el('table',{class:'cob-tbl'},
+    el('thead',{},el('tr',{},
+      el('th',{text:'Proyecto'}),el('th',{text:'Presupuesto'}),el('th',{text:'Pagado'}),
+      el('th',{text:'%'}),el('th',{text:'Te deben'}))),
+    tb,
+    el('tfoot',{},el('tr',{},
+      el('td',{text:filas.length+' proyectos'}),
+      el('td',{text:clp(T.p)}),el('td',{text:clp(T.cob)}),
+      el('td',{text:(T.p?Math.round(T.cob/T.p*100):0)+'%'}),
+      el('td',{class:'falta',style:'color:var(--p2,#c99148)',text:clp(T.falta)})))
+  );
+  const copiar=()=>{
+    const ancho=Math.max(...filas.map(f=>f.c.name.length),8);
+    const txt=['POR COBRAR · '+a.name+' · '+todayStr(),'']
+      .concat(filas.map(f=>f.c.name.padEnd(ancho)+'  '+clp(f.falta).padStart(12)+(f.cob<=0?'  (sin anticipo)':'')))
+      .concat(['', 'TOTAL'.padEnd(ancho)+'  '+clp(T.falta).padStart(12)]).join('\n');
+    const ok=()=>{ btn.textContent='Copiado ✓'; setTimeout(()=>btn.textContent='Copiar resumen',1500); };
+    if(navigator.clipboard) navigator.clipboard.writeText(txt).then(ok,()=>{});
+  };
+  const btn=el('button',{onclick:copiar},'Copiar resumen');
+  ov.append(el('div',{class:'modal cob-modal'},
+    el('h4',{text:'Por cobrar · '+a.name}),
+    el('div',{class:'cob-tot'},
+      el('div',{},el('b',{style:'color:var(--p2,#c99148)',text:clp(T.falta)}),el('span',{text:'te deben en total'})),
+      el('div',{},el('b',{style:'color:var(--p1,#c0574a)',text:clp(sinAnt.reduce((s,f)=>s+f.falta,0))}),
+        el('span',{text:sinAnt.length+' sin anticipo'})),
+      el('div',{},el('b',{style:'color:var(--today,#7fb2ab)',text:clp(T.cob)}),
+        el('span',{text:'ya pagado de estos'}))),
+    filas.length? tabla : el('div',{class:'hint',text:'Nadie te debe nada en esta área. 🎉'}),
+    el('div',{class:'hint',text:'Solo proyectos activos con presupuesto cargado y saldo pendiente. Clic en una fila para abrir su ficha y registrar un pago.'}),
+    el('div',{class:'m-row'}, btn, el('button',{class:'primary',onclick:()=>ov.remove()},'Cerrar'))
+  ));
+  document.body.append(ov);
 }
 
 function renderMain(){
@@ -3605,6 +3720,7 @@ function oficinaKey(cliente){
   s=s.replace(/\s+/g,' ').trim();
   return s || '_sin';
 }
+let PRES_FILTRO=null;   // oficina elegida en «Por oficina» (solo en pantalla, no se sincroniza)
 function renderPorOficina(){
   const wrap=el('div',{class:'ofi-wrap'});
   const ps=(data.presupuestos||[]).filter(p=>p.cliente && p.cliente.trim());
@@ -3613,7 +3729,7 @@ function renderPorOficina(){
   const g=new Map();
   ps.forEach(p=>{
     const k=oficinaKey(p.cliente);
-    if(!g.has(k)) g.set(k,{label:p.cliente.trim(), nombres:{}, enviado:0, nEnv:0, aprobado:0, nApr:0, total:0, n:0});
+    if(!g.has(k)) g.set(k,{key:k, label:p.cliente.trim(), nombres:{}, enviado:0, nEnv:0, aprobado:0, nApr:0, total:0, n:0});
     const o=g.get(k);
     o.nombres[p.cliente.trim()]=(o.nombres[p.cliente.trim()]||0)+1;
     const m=(p.moneda==='UF')?0:(p.monto||0);   // los UF no se suman con pesos
@@ -3626,9 +3742,12 @@ function renderPorOficina(){
 
   const lista=[...g.values()].sort((a,b)=> (b.enviado-a.enviado) || (b.total-a.total));
   wrap.append(el('div',{class:'ofi-t',text:'Por oficina · '+lista.length+' estudio'+(lista.length===1?'':'s')}));
-  const fila=el('div',{class:'ofi-row'});
+  const fila=el('div',{class:'ofi-row'+(PRES_FILTRO?' filtrando':'')});
   lista.forEach(o=>{
-    const c=el('div',{class:'ofi-chip',title:o.n+' presupuesto'+(o.n===1?'':'s')+' en total · '+clp(o.total)});
+    const on=PRES_FILTRO===o.key;
+    const c=el('div',{class:'ofi-chip'+(on?' on':''),
+      title:(on?'Clic para ver todas las oficinas':'Clic para ver solo '+o.label)+' · '+o.n+' presupuesto'+(o.n===1?'':'s')+' en total · '+clp(o.total),
+      onclick:()=>{ PRES_FILTRO = on ? null : o.key; render(); }});
     c.append(el('div',{class:'ofi-name',text:o.label}));
     c.append(el('div',{class:'ofi-monto mono',text:clp(o.enviado)}));
     const pie=[];
@@ -3639,6 +3758,59 @@ function renderPorOficina(){
   });
   wrap.append(fila);
   return wrap;
+}
+
+/* ===== Seguimiento por oficina: qué le tengo enviado a cada estudio ===== */
+function renderSeguimientoOficina(key){
+  const ps=(data.presupuestos||[]).filter(p=>p.cliente && oficinaKey(p.cliente)===key);
+  const nombres={}; ps.forEach(p=>{ const n=p.cliente.trim(); nombres[n]=(nombres[n]||0)+1; });
+  const label=Object.keys(nombres).sort((a,b)=>nombres[b]-nombres[a])[0]||'';
+  const env=ps.filter(p=>p.estado==='enviado')
+    .sort((a,b)=>(a.fechaEnvio||'').localeCompare(b.fechaEnvio||''));
+  const apr=ps.filter(p=>p.estado==='aprobado'), cai=ps.filter(p=>p.estado==='caido');
+  const sumCLP=l=>l.reduce((s,p)=>s+(p.moneda==='UF'?0:(p.monto||0)),0);
+  const sumUF=l=>l.reduce((s,p)=>s+(p.moneda==='UF'?(p.monto||0):0),0);
+  const totTxt=l=>{ const c=sumCLP(l), u=sumUF(l); return [c?clp(c):'', u?u.toLocaleString('es-CL')+' UF':''].filter(Boolean).join(' + ')||'$0'; };
+  const dias=f=>f? Math.max(0,Math.round((new Date(todayStr())-new Date(f))/86400000)) : null;
+  const fCorta=f=>f? f.slice(8,10)+'-'+f.slice(5,7)+'-'+f.slice(0,4) : '';
+  const num=p=>p.numero? 'N° '+fmtPresupCodigo(p.numero) : '';
+
+  const box=el('div',{class:'seg-box'});
+  const copiar=()=>{
+    const lineas=env.map(p=>'• '+(num(p)?num(p)+' · ':'')+p.nombre+(p.comuna?' ('+p.comuna+')':'')+' — '+presMoneda(p)+(p.fechaEnvio?', enviado el '+fCorta(p.fechaEnvio):''));
+    const txt=['Hola, ¿cómo están?','',
+      'Les escribo para hacer seguimiento de los presupuestos que les tenemos enviados:','',
+      ...lineas,'',
+      'En total son '+totTxt(env)+'. ¿Me cuentan cuáles van, cuáles quedan en espera y cuáles no siguen? Así ordenamos la carga de trabajo.','',
+      'Cualquier cosa, me escriben.'].join('\n');
+    const ok=()=>{ bCopy.textContent='Copiado ✓'; setTimeout(()=>bCopy.textContent='Copiar correo de seguimiento',1600); };
+    if(navigator.clipboard) navigator.clipboard.writeText(txt).then(ok,()=>{});
+  };
+  const bCopy=el('button',{onclick:copiar},'Copiar correo de seguimiento');
+  box.append(el('div',{class:'seg-head'},
+    el('h3',{text:label}),
+    el('span',{class:'seg-tot',text:totTxt(env)+' en juego'}),
+    el('span',{class:'seg-sub',text:env.length+' enviado'+(env.length===1?'':'s')+'  ·  '+apr.length+' aprobado'+(apr.length===1?'':'s')+(apr.length?' ('+totTxt(apr)+')':'')+'  ·  '+cai.length+' caído'+(cai.length===1?'':'s')}),
+    el('div',{class:'seg-btns'}, env.length?bCopy:null,
+      el('button',{onclick:()=>{ PRES_FILTRO=null; render(); }},'✕ Ver todas'))));
+  if(env.length){
+    const tb=el('tbody');
+    env.forEach(p=>{
+      const d=dias(p.fechaEnvio);
+      tb.append(el('tr',{class:(d!=null&&d>=30)?'viejo':''},
+        el('td',{class:'mono',text:num(p)||'—'}),
+        el('td',{}, p.nombre, p.comuna?el('span',{style:'color:var(--faint)',text:' · '+p.comuna}):null),
+        el('td',{class:'mono r',text:presMoneda(p)}),
+        el('td',{class:'mono',text:fCorta(p.fechaEnvio)}),
+        el('td',{class:'mono r dias',text:d==null?'':('hace '+d+' d')})));
+    });
+    box.append(el('table',{class:'seg-tbl'},
+      el('thead',{},el('tr',{},el('th',{text:'N°'}),el('th',{text:'Proyecto enviado'}),el('th',{class:'r',text:'Monto'}),el('th',{text:'Enviado'}),el('th',{class:'r',text:'Esperando'}))),
+      tb,
+      el('tfoot',{},el('tr',{},el('td',{}),el('td',{text:env.length+' en juego'}),el('td',{class:'r',text:totTxt(env)}),el('td',{}),el('td',{})))));
+    box.append(el('div',{class:'seg-pie',text:'En rojo, los que llevan 30 días o más sin respuesta. «Copiar correo de seguimiento» deja la lista lista para pegar en un correo o WhatsApp.'}));
+  } else box.append(el('div',{class:'seg-pie',text:'No hay presupuestos enviados esperando respuesta de esta oficina.'}));
+  return box;
 }
 
 function renderPresupuestos(root){
@@ -3663,17 +3835,20 @@ function renderPresupuestos(root){
   add.append(iNombre,iCliente,iComuna,iMonto,iMoneda,addBtn);
   view.append(add);
 
-  const activos=data.presupuestos.filter(p=>p.estado==='enviado');
+  const delFiltro=p=>!PRES_FILTRO || oficinaKey(p.cliente)===PRES_FILTRO;
+  if(PRES_FILTRO && !data.presupuestos.some(p=>p.cliente && oficinaKey(p.cliente)===PRES_FILTRO)) PRES_FILTRO=null;
+  const activos=data.presupuestos.filter(p=>p.estado==='enviado' && delFiltro(p));
   const montoActivo=activos.reduce((s,p)=>s+(p.moneda==='UF'?0:(p.monto||0)),0);
   const ufActivo=activos.reduce((s,p)=>s+(p.moneda==='UF'?(p.monto||0):0),0);
   view.append(el('div',{class:'pres-resumen mono'},
     activos.length+' enviados en juego'+(ufActivo?'  ·  '+ufActivo.toLocaleString('es-CL')+' UF':'')+(montoActivo?'  ·  '+clp(montoActivo):'')));
 
   view.append(renderPorOficina());
+  if(PRES_FILTRO) view.append(renderSeguimientoOficina(PRES_FILTRO));
 
   const board=el('div',{class:'pres-board'});
   PRES_ESTADOS.forEach(([k,label])=>{
-    const list=data.presupuestos.filter(p=>p.estado===k);
+    const list=data.presupuestos.filter(p=>p.estado===k && delFiltro(p));
     const col=el('div',{class:'pres-col pres-'+k});
     col.append(el('div',{class:'pres-col-head'},el('span',{text:label}),el('span',{class:'pres-col-n mono',text:list.length})));
     const cards=el('div',{class:'pres-cards'});
